@@ -2,11 +2,32 @@
 
 . "$(dirname "$0")/../utils/colors.sh"
 
-
 print_error "This script should receive the name of the 42 student"
 
+inception_folder="inception"
+
+create_inception_folder()
+{
+	print_info "Creating inception folder..."
+	mkdir -p "$inception_folder"
+}
+
+if [ -d "$inception_folder" ]; then
+	print_info "The folder '$inception_folder' already exists. Do you want to remove it? (y/n) "
+	read -r response
+	if [ "$response" = "y" ]; then
+		rm -rf "$inception_folder"
+		create_inception_folder
+	else
+		print_info "Aborting script execution."
+		exit 1
+	fi
+else
+	create_inception_folder
+fi
+
 # ? Variables
-srcs="srcs"
+srcs=$inception_folder"/srcs"
 requirements=$srcs"/requirements"
 mariadb=$requirements"/mariadb"
 nginx=$requirements"/nginx"
@@ -16,6 +37,7 @@ print_info "Creating volumes folders..."
 print_error "Uncomment this lines!"
 # sudo mkdir -p /home/danfern3/data/web
 # sudo mkdir -p /home/danfern3/data/mariadb
+# print_ok "Volumes folders created successfully!"
 print_error "Uncomment this lines!"
 
 print_info "Creating folder structure..."
@@ -53,8 +75,6 @@ sh scripts/nginx-tools.sh > "$nginx/tools/setup.sh"
 
 print_error "There is no Makefile"
 
-# .env (no sobreescribir)
+print_ok "Inception folder structure created successfully!"
 
-sh scripts/env.sh
-
-print_ok ".env"
+sh scripts/env.sh $inception_folder
