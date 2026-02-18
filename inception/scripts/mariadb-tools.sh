@@ -3,7 +3,7 @@
 
 cat << EOF
 
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
