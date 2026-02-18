@@ -23,9 +23,9 @@ RUN apk update && apk add --no-cache nginx openssl
 # Hay que crear el directorio /run/nginx para que Nginx pueda crear su archivo PID
 RUN mkdir -p /run/nginx /etc/nginx/ssl
 
-COPY ./tools/generate-ssl.sh /generate-ssl.sh
-RUN chmod +x /generate-ssl.sh
-RUN /generate-ssl.sh
+# COPY ./tools/generate-ssl.sh /generate-ssl.sh
+# RUN chmod +x /generate-ssl.sh
+# RUN /generate-ssl.sh
 
 # # Copiamos el archivo de configuración personalizado y el contenido HTML
 RUN mkdir -p /var/www/static
@@ -34,8 +34,8 @@ COPY ./default.conf /etc/nginx/http.d/.
 COPY ./default-bonus.conf /etc/nginx/http.d/.
 # RUN mkdir -p /run/nginx
 
-COPY ./tools/script.sh /script.sh
-RUN chmod +x /script.sh
+COPY ./tools/setup.sh /setup.sh
+RUN chmod +x /setup.sh
 
 # # Exponemos el puerto 80 para HTTP
 EXPOSE 443
