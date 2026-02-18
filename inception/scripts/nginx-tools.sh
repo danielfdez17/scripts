@@ -2,7 +2,6 @@
 
 
 cat << EOF
-
 #!bin/sh
 
 # Directorio donde se guardarán los certificados

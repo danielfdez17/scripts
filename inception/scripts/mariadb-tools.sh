@@ -2,7 +2,6 @@
 
 
 cat << EOF
-
 #!/bin/bash
 
 set -e
