@@ -5,11 +5,13 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+ORANGE='\033[0;33m'
 NC='\033[0m' # No Color
 WARNING=$YELLOW'[WARNING]'
 INFO=$BLUE'[INFO]'
 OK=$GREEN'[OK]'
 ERROR=$RED'[ERROR]'
+TODO=$ORANGE'[TODO]'
 
 print_info()
 {
@@ -24,4 +26,14 @@ print_ok()
 print_error()
 {
 	echo $ERROR "$1" $NC
+}
+
+print_warning()
+{
+	echo $WARNING "$1" $NC
+}
+
+print_todo()
+{
+	echo $TODO "$1" $NC
 }

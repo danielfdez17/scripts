@@ -8,24 +8,27 @@ inception_folder="inception"
 
 create_inception_folder()
 {
+	rm -rf "$inception_folder"
 	print_info "Creating inception folder..."
 	mkdir -p "$inception_folder"
 }
 
-if [ -d "$inception_folder" ]; then
-	print_info "The folder '$inception_folder' already exists. Do you want to remove it? (y/n) "
-	read -r response
-	if [ "$response" = "y" ]; then
-		rm -rf "$inception_folder"
-		create_inception_folder
-	else
-		print_info "Aborting script execution."
-		exit 1
-	fi
-else
-	create_inception_folder
-fi
+# if [ -d "$inception_folder" ]; then
+# 	print_warning "The folder '$inception_folder' already exists. Do you want to remove it? (y/n) "
+# 	read -r response
+# 	if [ "$response" = "y" ]; then
+# 		rm -rf "$inception_folder"
+# 		create_inception_folder
+# 	else
+# 		print_info "Aborting script execution."
+# 		exit 1
+# 	fi
+# else
+# 	create_inception_folder
+# fi
 
+create_inception_folder
+print_warning "The folder '$inception_folder' already exists. It will be removed and recreated."
 # ? Variables
 srcs=$inception_folder"/srcs"
 requirements=$srcs"/requirements"
@@ -33,12 +36,12 @@ mariadb=$requirements"/mariadb"
 nginx=$requirements"/nginx"
 wordpress=$requirements"/wordpress"
 
-print_info "Creating volumes folders..."
-print_error "Uncomment this lines!"
+print_todo "Creating volumes folders..."
+print_todo "Uncomment this lines!"
 # sudo mkdir -p /home/danfern3/data/web
 # sudo mkdir -p /home/danfern3/data/mariadb
 # print_ok "Volumes folders created successfully!"
-print_error "Uncomment this lines!"
+print_todo "Uncomment this lines!"
 
 print_info "Creating folder structure..."
 mkdir -p "$srcs"
@@ -73,8 +76,11 @@ sh scripts/nginx-dockerfile.sh > "$nginx/Dockerfile"
 sh scripts/nginx-conf.sh > "$nginx/conf/nginx.conf"
 sh scripts/nginx-tools.sh > "$nginx/tools/setup.sh"
 
-print_error "There is no Makefile"
-
-print_ok "Inception folder structure created successfully!"
+print_ok "Inception folder structure and files created successfully!"
 
 sh scripts/env.sh $inception_folder
+
+print_todo "Build Docker images and start containers"
+
+cd $inception_folder
+# make all
