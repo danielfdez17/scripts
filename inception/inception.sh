@@ -50,7 +50,7 @@ mkdir -p "$mariadb"
 mkdir -p "$nginx"
 mkdir -p "$wordpress"
 
-sh scripts/makefile.sh > "$srcs/Makefile"
+sh scripts/makefile.sh > "$inception_folder/Makefile"
 
 sh scripts/docker-compose.sh > "$srcs/docker-compose.yml"
 
