@@ -27,6 +27,7 @@ echo "WORDPRESS_ADMIN_PASSWORD=admin_password" >> $srcs"/.env"
 echo "WORDPRESS_USER=user" >> $srcs"/.env"
 echo "WORDPRESS_PASSWORD=user_password" >> $srcs"/.env"
 echo "WORDPRESS_DOMAIN=danfern3.42.fr" >> $srcs"/.env"
+echo "WORDPRESS_URL=danfern3.42.fr" >> $srcs"/.env"
 echo "WORDPRESS_TITLE=inception" >> $srcs"/.env"
 
 print_ok ".env"
