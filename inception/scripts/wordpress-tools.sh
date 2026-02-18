@@ -55,6 +55,6 @@ php wp-cli.phar option update home "\${WORDPRESS_URL}" --allow-root
 
 
 echo "Starting PHP-FPM..."
-exec php-fpm82 -F
+exec php82-fpm -F
 
 EOF
