@@ -7,15 +7,15 @@ all: build up
 
 down:
 	@echo "Stopping and removing containers, networks, volumes, and images..."
-	docker-compose -f srcs/docker-compose.yml down
+	docker compose -f srcs/docker-compose.yml down
 
 build:
 	@echo "Building Docker images without cache..."
-	docker-compose -f srcs/docker-compose.yml build --no-cache
+	docker compose -f srcs/docker-compose.yml build --no-cache
 
 up: build
 	@echo "Starting containers in detached mode..."
-	docker-compose -f srcs/docker-compose.yml up
+	docker compose -f srcs/docker-compose.yml up
 
 clean:
 	@echo "Pruning Docker system to remove all unused data..."
@@ -28,7 +28,7 @@ st:
 
 kill:
 	@echo "Killing all running containers..."
-	docker-compose -f srcs/docker-compose.yml down --rmi all --volumes --remove-orphans
+	docker compose -f srcs/docker-compose.yml down --rmi all --volumes --remove-orphans
 
 re: down kill clean all
 
