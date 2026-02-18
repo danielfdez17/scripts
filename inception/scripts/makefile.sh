@@ -6,7 +6,7 @@ cat << EOF
 all: build up
 
 down:
-    @echo "Stopping and removing containers, networks, volumes, and images..."
+	@echo "Stopping and removing containers, networks, volumes, and images..."
     docker-compose -f srcs/docker-compose.yml down
 
 build:
