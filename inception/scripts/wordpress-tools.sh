@@ -22,11 +22,11 @@ if [ ! -f wp-config.php ]; then
     php wp-cli.phar core download --allow-root
     
     echo "Creating wp-config.php..."
-    php wp-cli.phar config create --dbname='\${MARIADB_DATABASE} --dbuser='\${MARIADB_USER} --dbpass='\${MARIADB_PASSWORD} --dbhost=mariadb --allow-root
+    php wp-cli.phar config create --dbname='\${MARIADB_DATABASE}' --dbuser='\${MARIADB_USER}' --dbpass='\${MARIADB_PASSWORD}' --dbhost=mariadb --allow-root
     
     # Esperar a que MariaDB esté listo
     echo "Waiting for MariaDB to be ready..."
-    until mysql -h mariadb -u '\${MARIADB_USER} -p'\${MARIADB_PASSWORD} -e "SELECT 1" >/dev/null 2>&1; do
+    until mysql -h mariadb -u '\${MARIADB_USER}' -p'\${MARIADB_PASSWORD}' -e "SELECT 1" >/dev/null 2>&1; do
         echo "MariaDB is unavailable - sleeping"
         sleep 2
     done
@@ -34,7 +34,7 @@ if [ ! -f wp-config.php ]; then
 fi
 
 # Verificar si el usuario admin existe
-if ! php wp-cli.phar user get '\${WORDPRESS_ADMIN_USER} --allow-root 2>/dev/null; then
+if ! php wp-cli.phar user get '\${WORDPRESS_ADMIN_USER}' --allow-root 2>/dev/null; then
     echo "Installing WordPress..."
     
     # Si dice que ya está instalado pero no hay usuario, resetear la BD
@@ -43,9 +43,9 @@ if ! php wp-cli.phar user get '\${WORDPRESS_ADMIN_USER} --allow-root 2>/dev/null
         php wp-cli.phar db reset --yes --allow-root
     fi
     if [ "$NGINX_MODE" = "bonus" ]; then
-        php wp-cli.phar core install --url='\${WORDPRESS_URL_BONUS} --title="'\${WORDPRESS_TITLE}" --admin_user='\${WORDPRESS_ADMIN_USER} --admin_password='\${WORDPRESS_ADMIN_PASSWORD} --admin_email='\${WORDPRESS_ADMIN_USER}@example.com --skip-email --allow-root
+        php wp-cli.phar core install --url='\${WORDPRESS_URL_BONUS}' --title="'\${WORDPRESS_TITLE}'" --admin_user='\${WORDPRESS_ADMIN_USER}' --admin_password='\${WORDPRESS_ADMIN_PASSWORD}' --admin_email='\${WORDPRESS_ADMIN_USER}'@example.com --skip-email --allow-root
     else
-        php wp-cli.phar core install --url='\${WORDPRESS_URL} --title="'\${WORDPRESS_TITLE}" --admin_user='\${WORDPRESS_ADMIN_USER} --admin_password='\${WORDPRESS_ADMIN_PASSWORD} --admin_email='\${WORDPRESS_ADMIN_USER}@example.com --skip-email --allow-root
+        php wp-cli.phar core install --url='\${WORDPRESS_URL}' --title="'\${WORDPRESS_TITLE}'" --admin_user='\${WORDPRESS_ADMIN_USER}' --admin_password='\${WORDPRESS_ADMIN_PASSWORD}' --admin_email='\${WORDPRESS_ADMIN_USER}'@example.com --skip-email --allow-root
     fi
     
     echo "WordPress installation complete!"
@@ -56,12 +56,12 @@ fi
 # Actualizar URLs según el modo
 if [ "$NGINX_MODE" = "bonus" ]; then
     echo "Updating WordPress URLs for bonus mode..."
-    php wp-cli.phar option update siteurl "'\${WORDPRESS_URL_BONUS}" --allow-root
-    php wp-cli.phar option update home "'\${WORDPRESS_URL_BONUS}" --allow-root
+    php wp-cli.phar option update siteurl "'\${WORDPRESS_URL_BONUS}'" --allow-root
+    php wp-cli.phar option update home "'\${WORDPRESS_URL_BONUS}'" --allow-root
 else
     echo "Updating WordPress URLs for default mode..."
-    php wp-cli.phar option update siteurl "'\${WORDPRESS_URL}" --allow-root
-    php wp-cli.phar option update home "'\${WORDPRESS_URL}" --allow-root
+    php wp-cli.phar option update siteurl "'\${WORDPRESS_URL}'" --allow-root
+    php wp-cli.phar option update home "'\${WORDPRESS_URL}'" --allow-root
 fi
 
 echo "Starting PHP-FPM..."
