@@ -22,7 +22,7 @@ RUN apk update && apk add --no-cache php82 php82-phar php82-fpm php82-mysqli php
 RUN echo "memory_limit = 256M" >> /etc/php82/php.ini
 
 # Copiamos el archivo de configuración personalizado de php-fpm
-COPY ./www.conf /etc/php82/php-fpm.d/www.conf
+COPY ./conf/www.conf /etc/php82/php-fpm.d/www.conf
 COPY ./tools/script.sh /script.sh
 RUN chmod +x /script.sh
 
