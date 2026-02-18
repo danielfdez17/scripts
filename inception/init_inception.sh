@@ -1,46 +1,46 @@
 #!/bin/bash
 
-# ? Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-INFO=$YELLOW'[INFO]'
-OK=$GREEN'[OK]'
-ERROR=$RED'[ERROR]'
+. "$(dirname "$0")/../utils/colors.sh"
 
-function print_info {
-	echo $INFO "$1" $NC
-}
 
-function print_ok {
-	echo $OK "$1" $NC
-}
+print_error "This script should receive the name of the 42 student"
 
-function print_error {
-	echo $ERROR "$1" $NC
-}
+# ? Variables
+srcs="srcs"
+requirements=$srcs"/requirements"
+mariadb=$requirements"/mariadb"
+nginx=$requirements"/nginx"
+wordpress=$requirements"/wordpress"
+
+print_info "Creating volumes folders..."
+print_error "Uncomment this lines!"
+# sudo mkdir -p /home/danfern3/data/web
+# sudo mkdir -p /home/danfern3/data/mariadb
+print_error "Uncomment this lines!"
 
 print_info "Creating folder structure..."
+mkdir -p "$srcs"
+mkdir -p "$requirements"
+mkdir -p "$mariadb"
+mkdir -p "$nginx"
+mkdir -p "$wordpress"
+
+mkdir -p "$wordpress/conf"
+mkdir -p "$wordpress/tools"
+
+
+mkdir -p "$mariadb/conf"
+mkdir -p "$mariadb/tools"
+
+
+mkdir -p "$nginx/conf"
+mkdir -p "$nginx/tools"
+
 
 print_error "There is no Makefile"
 
 # .env (no sobreescribir)
-# echo "DOMAIN_NAME=danfern3.42.fr" > "srcs/.env"
-# echo >> "srcs/.env"
-# echo "# Database config" >> "srcs/.env"
-# echo "MARIADB_DATABASE=wordpress" >> "srcs/.env"
-# echo "MARIADB_USER=wpuser" >> "srcs/.env"
-# echo "MARIADB_PASSWORD=wp_pass" >> "srcs/.env"
-# echo "MARIADB_ROOT_PASSWORD=root_pass" >> "srcs/.env"
-# echo >> "srcs/.env"
-# echo "# Wordpress config" >> "srcs/.env"
-# echo "WORDPRESS_ADMIN_USER=admin" >> "srcs/.env"
-# echo "WORDPRESS_ADMIN_PASSWORD=admin_password" >> "srcs/.env"
-# echo "WORDPRESS_USER=user" >> "srcs/.env"
-# echo "WORDPRESS_PASSWORD=user_password" >> "srcs/.env"
-# echo "WORDPRESS_DOMAIN=danfern3.42.fr" >> "srcs/.env"
-# echo "WORDPRESS_TITLE=inception" >> "srcs/.env"
+
+sh scripts/env.sh
 
 print_ok ".env"
