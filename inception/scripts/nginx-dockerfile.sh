@@ -29,7 +29,6 @@ RUN mkdir -p /run/nginx /etc/nginx/ssl
 
 # # Copiamos el archivo de configuración personalizado y el contenido HTML
 RUN mkdir -p /var/www/static
-COPY ./web/index.html /var/www/static/index.html
 COPY ./nginx.conf /etc/nginx/http.d/.
 # RUN mkdir -p /run/nginx
 
