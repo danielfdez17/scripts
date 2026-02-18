@@ -28,18 +28,18 @@ if [ ! -d /var/lib/mysql/mysql ]; then
 
     # Se configura la contraseña de root y se crea la base de datos
     mariadb -u root <<EOSQL
-        ALTER USER 'root'@'localhost' IDENTIFIED BY '${MARIADB_ROOT_PASSWORD}';
-        CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY '${MARIADB_ROOT_PASSWORD}';
+        ALTER USER 'root'@'localhost' IDENTIFIED BY '\${MARIADB_ROOT_PASSWORD}';
+        CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY '\${MARIADB_ROOT_PASSWORD}';
         GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
 
-        CREATE DATABASE IF NOT EXISTS ${MARIADB_DATABASE};
-        CREATE USER IF NOT EXISTS '${MARIADB_USER}'@'%' IDENTIFIED BY '${MARIADB_PASSWORD}';
-        GRANT ALL PRIVILEGES ON ${MARIADB_DATABASE}.* TO '${MARIADB_USER}'@'%';
+        CREATE DATABASE IF NOT EXISTS \${MARIADB_DATABASE};
+        CREATE USER IF NOT EXISTS '\${MARIADB_USER}'@'%' IDENTIFIED BY '\${MARIADB_PASSWORD}';
+        GRANT ALL PRIVILEGES ON \${MARIADB_DATABASE}.* TO '\${MARIADB_USER}'@'%';
         FLUSH PRIVILEGES;
 EOSQL
 
     # Detiene el servidor MariaDB temporalmente iniciado
-    mysqladmin -u root -p${MARIADB_ROOT_PASSWORD} shutdown
+    mysqladmin -u root -p\${MARIADB_ROOT_PASSWORD} shutdown
     echo "MariaDB initialization complete."
 fi
 

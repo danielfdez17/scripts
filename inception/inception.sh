@@ -37,11 +37,11 @@ nginx=$requirements"/nginx"
 wordpress=$requirements"/wordpress"
 
 print_todo "Creating volumes folders..."
-print_todo "Uncomment this lines!"
-# sudo mkdir -p /home/danfern3/data/web
-# sudo mkdir -p /home/danfern3/data/mariadb
-# print_ok "Volumes folders created successfully!"
-print_todo "Uncomment this lines!"
+# print_todo "Uncomment this lines!"
+sudo mkdir -p /home/danfern3/data/web
+sudo mkdir -p /home/danfern3/data/mariadb
+print_ok "Volumes folders created successfully!"
+# print_todo "Uncomment this lines!"
 
 print_info "Creating folder structure..."
 mkdir -p "$srcs"

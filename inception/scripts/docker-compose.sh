@@ -2,6 +2,7 @@
 
 . "$(dirname "$0")/../../utils/colors.sh"
 
+echo -n "#"
 print_error "This script should receive the name of the 42 student"
 
 cat << EOF
