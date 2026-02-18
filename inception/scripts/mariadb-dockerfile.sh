@@ -12,7 +12,7 @@ RUN apk add --no-cache mariadb mariadb-client bash
 RUN mkdir -p /run/mysqld /var/lib/mysql && chown -R mysql:mysql /run/mysqld /var/lib/mysql
 
 # Copiar config y script de inicialización
-COPY mariadb-server.cnf /etc/my.cnf.d/.
+COPY ./conf/mariadb-server.cnf /etc/my.cnf.d/.
 COPY ./tools/setup.sh /setup.sh
 RUN chmod +x /setup.sh
 
