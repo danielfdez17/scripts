@@ -7,11 +7,11 @@ cat << EOF
 ; the variable $pool can be used in any directive and will be replaced by the
 ; pool name ('www' here)
 [www]
-user = nobody
-group = nobody
+user = root
+group = root
 listen = 9000
-listen.owner = nobody
-listen.group = nobody
+listen.owner = root
+listen.group = root
 pm = dynamic
 pm.max_children = 5
 pm.start_servers = 2
@@ -41,8 +41,8 @@ clear_env = no
 ;       --allow-to-run-as-root option to work.
 ; Default Values: The user is set to master process running user by default.
 ;                 If the group is not set, the user's group is used.
-user = nobody
-group = nobody
+user = root
+group = root
 
 ; The address on which to accept FastCGI requests.
 ; Valid syntaxes are:
@@ -54,7 +54,8 @@ group = nobody
 ;                            (IPv6 and IPv4-mapped) on a specific port;
 ;   '/path/to/unix/socket' - to listen on a unix socket.
 ; Note: This value is mandatory.
-listen = wp-php:9000
+;listen = wp-php:9000
+listen = 9000
 
 ; Set listen(2) backlog.
 ; Default Value: 511 (-1 on Linux, FreeBSD and OpenBSD)
@@ -66,8 +67,8 @@ listen = wp-php:9000
 ; and group can be specified either by name or by their numeric IDs.
 ; Default Values: Owner is set to the master process running user. If the group
 ;                 is not set, the owner's group is used. Mode is set to 0660.
-;listen.owner = nobody
-;listen.group = nobody
+;listen.owner = root
+;listen.group = root
 ;listen.mode = 0660
 
 ; When POSIX Access Control Lists are supported you can set them using
