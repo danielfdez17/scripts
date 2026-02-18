@@ -42,11 +42,7 @@ if ! php wp-cli.phar user get \${WORDPRESS_ADMIN_USER} --allow-root 2>/dev/null;
         echo "WordPress tables exist but installation is incomplete. Resetting..."
         php wp-cli.phar db reset --yes --allow-root
     fi
-    if [ "$NGINX_MODE" = "bonus" ]; then
-        php wp-cli.phar core install --url=\${WORDPRESS_URL_BONUS} --title="\${WORDPRESS_TITLE}" --admin_user=\${WORDPRESS_ADMIN_USER} --admin_password=\${WORDPRESS_ADMIN_PASSWORD} --admin_email=\${WORDPRESS_ADMIN_USER}@example.com --skip-email --allow-root
-    else
-        php wp-cli.phar core install --url=\${WORDPRESS_URL} --title="\${WORDPRESS_TITLE}" --admin_user=\${WORDPRESS_ADMIN_USER} --admin_password=\${WORDPRESS_ADMIN_PASSWORD} --admin_email=\${WORDPRESS_ADMIN_USER}@example.com --skip-email --allow-root
-    fi
+    php wp-cli.phar core install --url=\${WORDPRESS_URL} --title="\${WORDPRESS_TITLE}" --admin_user=\${WORDPRESS_ADMIN_USER} --admin_password=\${WORDPRESS_ADMIN_PASSWORD} --admin_email=\${WORDPRESS_ADMIN_USER}@example.com --skip-email --allow-root
     
     echo "WordPress installation complete!"
 else
@@ -54,15 +50,10 @@ else
 fi
 
 # Actualizar URLs según el modo
-if [ "$NGINX_MODE" = "bonus" ]; then
-    echo "Updating WordPress URLs for bonus mode..."
-    php wp-cli.phar option update siteurl "\${WORDPRESS_URL_BONUS}" --allow-root
-    php wp-cli.phar option update home "\${WORDPRESS_URL_BONUS}" --allow-root
-else
-    echo "Updating WordPress URLs for default mode..."
-    php wp-cli.phar option update siteurl "\${WORDPRESS_URL}" --allow-root
-    php wp-cli.phar option update home "\${WORDPRESS_URL}" --allow-root
-fi
+echo "Updating WordPress URLs for default mode..."
+php wp-cli.phar option update siteurl "\${WORDPRESS_URL}" --allow-root
+php wp-cli.phar option update home "\${WORDPRESS_URL}" --allow-root
+
 
 echo "Starting PHP-FPM..."
 exec php-fpm82 -F

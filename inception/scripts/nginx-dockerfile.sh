@@ -31,7 +31,6 @@ RUN mkdir -p /run/nginx /etc/nginx/ssl
 RUN mkdir -p /var/www/static
 COPY ./web/index.html /var/www/static/index.html
 COPY ./default.conf /etc/nginx/http.d/.
-COPY ./default-bonus.conf /etc/nginx/http.d/.
 # RUN mkdir -p /run/nginx
 
 COPY ./tools/setup.sh /setup.sh
@@ -42,6 +41,6 @@ EXPOSE 443
 
 # Comando por defecto para ejecutar Nginx en primer plano
 # Ya que Nginx por defecto se ejecuta en segundo plano (daemon)
-CMD ["/script.sh"]
+CMD ["/setup.sh"]
 
 EOF
