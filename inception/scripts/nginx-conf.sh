@@ -4,27 +4,27 @@
 cat << EOF
 
 # Servidor por defecto que rechaza todo lo que no sea danfern3.42.fr
-server {
-	listen 80 default_server;
-	listen [::]:80 default_server;
-	listen 443 ssl default_server;
-	listen [::]:443 ssl default_server;
+# server {
+# 	listen 80 default_server;
+# 	listen [::]:80 default_server;
+# 	listen 443 ssl default_server;
+# 	listen [::]:443 ssl default_server;
 	
-	ssl_certificate /etc/nginx/ssl/nginx.crt;
-	ssl_certificate_key /etc/nginx/ssl/nginx.key;
+# 	ssl_certificate /etc/nginx/ssl/nginx.crt;
+# 	ssl_certificate_key /etc/nginx/ssl/nginx.key;
 	
-	server_name _;
-	return 444;  # Cierra la conexión sin respuesta
-}
+# 	server_name _;
+# 	return 444;  # Cierra la conexión sin respuesta
+# }
 
-server {
-	listen 80;
-	listen [::]:80;
-	server_name danfern3.42.fr;
+# server {
+# 	listen 80;
+# 	listen [::]:80;
+# 	server_name danfern3.42.fr;
 	
-	# Devolver error 426 (Upgrade Required)
-	return 426 "HTTPS Required\n";
-}
+# 	# Devolver error 426 (Upgrade Required)
+# 	return 426 "HTTPS Required\n";
+# }
 
 server {
 	listen 443 ssl;
