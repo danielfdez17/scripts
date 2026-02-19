@@ -49,4 +49,5 @@ fi
 
 echo "Starting PHP-FPM..."
 exec php-fpm82 -F --allow-to-run-as-root
+echo "PHP-FPM started successfully!"
 EOF
