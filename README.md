@@ -1,7 +1,7 @@
 # Scripts to automate boring, repetitive tasks
 
 ### ToDo list
-- [ ] Script to update License year of every repo passed as argument
+- [x] Script to update License year of every repo passed as argument
 
 #### Inception
 - [x] Script to create inception folder structure
