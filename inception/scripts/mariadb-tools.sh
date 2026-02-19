@@ -13,11 +13,10 @@ if [ ! -d /var/lib/mysql/mysql ]; then
 	echo "Initializing MariaDB data directory..."
 	mysql_install_db --user=mysql --ldata=/var/lib/mysql
 
-	# Empieza el servicio de MariaDB en segundo plano temporalmente
-	# para ejecutar comandos de configuración inicial
+	# Starts the MariaDB service in the background temporarily to run initial configuration commands
 	mysqld_safe --nowatch &
 
-	# Espera a que el servidor esté listo
+	# Waits for the MariaDB server to start
 	until mariadb-admin ping --silent; do
 		echo "Waiting for MariaDB server to start..."
 		sleep 1
@@ -25,7 +24,7 @@ if [ ! -d /var/lib/mysql/mysql ]; then
 
 	echo "Setting root password and creating database..."
 
-	# Se configura la contraseña de root y se crea la base de datos
+	# Setting root password and creating database...
 	mariadb -u root <<EOSQL
 		ALTER USER 'root'@'localhost' IDENTIFIED BY '\${MARIADB_ROOT_PASSWORD}';
 		CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY '\${MARIADB_ROOT_PASSWORD}';
@@ -37,12 +36,11 @@ if [ ! -d /var/lib/mysql/mysql ]; then
 		FLUSH PRIVILEGES;
 EOSQL
 
-	# Detiene el servidor MariaDB temporalmente iniciado
+	# Stops the temporarily started MariaDB server
 	mysqladmin -u root -p\${MARIADB_ROOT_PASSWORD} shutdown
 	echo "MariaDB initialization complete."
 fi
 
 echo "Starting MariaDB server..."
 exec mysqld_safe
-
 EOF

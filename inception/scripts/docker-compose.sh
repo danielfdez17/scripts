@@ -3,68 +3,66 @@
 . "$(dirname "$0")/../../utils/colors.sh"
 
 cat << EOF
-
 services:
   nginx:
-    build: ./requirements/nginx/.
-    container_name: nginx
-    restart: on-failure
-    ports:
-      - "443:443"
-    volumes:
-      - wp_data:/var/www/html:ro
-    networks:
-      - inception-network
-    depends_on:
-      - wordpress
+	build: ./requirements/nginx/.
+	container_name: nginx
+	restart: on-failure
+	ports:
+	  - "443:443"
+	volumes:
+	  - wp_data:/var/www/html:ro
+	networks:
+	  - inception-network
+	depends_on:
+	  - wordpress
 
   wordpress:
-    build: ./requirements/wordpress/.
-    container_name: wp-php
-    restart: on-failure
-    env_file:
-      - .env
-    volumes:
-      - wp_data:/var/www/html
-    networks:
-      - inception-network
-    depends_on:
-      - mariadb
+	build: ./requirements/wordpress/.
+	container_name: wp-php
+	restart: on-failure
+	env_file:
+	  - .env
+	volumes:
+	  - wp_data:/var/www/html
+	networks:
+	  - inception-network
+	depends_on:
+	  - mariadb
 
   mariadb:
-    build: ./requirements/mariadb/.
-    container_name: mariadb
-    restart: on-failure
-    env_file:
-      - .env
-    ports:
-      - "3306:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-    networks:
-      - inception-network
+	build: ./requirements/mariadb/.
+	container_name: mariadb
+	restart: on-failure
+	env_file:
+	  - .env
+	ports:
+	  - "3306:3306"
+	volumes:
+	  - db_data:/var/lib/mysql
+	networks:
+	  - inception-network
 
 
 volumes:
-  # Volumen Docker para los archivos de WordPress
+  # Docker volume for WordPress files
   wp_data:
-    driver: local
-    driver_opts:
-      type: none
-      device: /home/danfern3/data/web
-      o: bind
+	driver: local
+	driver_opts:
+	  type: none
+	  device: /home/danfern3/data/web
+	  o: bind
 
-  # Volumen Docker para la base de datos
+  # Docker volume for database
   db_data:
-    driver: local
-    driver_opts:
-      type: none
-      device: /home/danfern3/data/mariadb
-      o: bind
+	driver: local
+	driver_opts:
+	  type: none
+	  device: /home/danfern3/data/mariadb
+	  o: bind
 
 networks:
   inception-network:
-    driver: bridge
-
+	driver: bridge
 
 EOF

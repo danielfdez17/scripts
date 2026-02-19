@@ -5,44 +5,44 @@ cat << EOF
 
 # Servidor por defecto que rechaza todo lo que no sea danfern3.42.fr
 server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-    listen 443 ssl default_server;
-    listen [::]:443 ssl default_server;
-    
-    ssl_certificate /etc/nginx/ssl/nginx.crt;
-    ssl_certificate_key /etc/nginx/ssl/nginx.key;
-    
-    server_name _;
-    return 444;  # Cierra la conexión sin respuesta
+	listen 80 default_server;
+	listen [::]:80 default_server;
+	listen 443 ssl default_server;
+	listen [::]:443 ssl default_server;
+	
+	ssl_certificate /etc/nginx/ssl/nginx.crt;
+	ssl_certificate_key /etc/nginx/ssl/nginx.key;
+	
+	server_name _;
+	return 444;  # Cierra la conexión sin respuesta
 }
 
 server {
-    listen 80;
-    listen [::]:80;
-    server_name danfern3.42.fr;
-    
-    # Devolver error 426 (Upgrade Required)
-    return 426 "HTTPS Required\n";
+	listen 80;
+	listen [::]:80;
+	server_name danfern3.42.fr;
+	
+	# Devolver error 426 (Upgrade Required)
+	return 426 "HTTPS Required\n";
 }
 
 server {
-    listen 443 ssl;
-    listen [::]:443 ssl;
-    server_name danfern3.42.fr;
+	listen 443 ssl;
+	listen [::]:443 ssl;
+	server_name danfern3.42.fr;
 
-    ssl_certificate /etc/nginx/ssl/nginx.crt;
-    ssl_certificate_key /etc/nginx/ssl/nginx.key;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers on;
+	ssl_certificate /etc/nginx/ssl/nginx.crt;
+	ssl_certificate_key /etc/nginx/ssl/nginx.key;
+	ssl_protocols TLSv1.2 TLSv1.3;
+	ssl_ciphers HIGH:!aNULL:!MD5;
+	ssl_prefer_server_ciphers on;
 
-    root /var/www/html;
-    index index.php index.html;
+	root /var/www/html;
+	index index.php index.html;
 
-    location / {
-        try_files $uri $uri/ /index.php?$args;
-    }
+	location / {
+		try_files $uri $uri/ /index.php?$args;
+	}
 
 	location ~ \.php$ {
 		fastcgi_pass wp-php:9000;
@@ -50,9 +50,8 @@ server {
 
 		include fastcgi_params;
 		fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_param PATH_INFO $fastcgi_path_info;
+		fastcgi_param PATH_INFO $fastcgi_path_info;
 		
 	}
 }
-
 EOF
