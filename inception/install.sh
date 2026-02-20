@@ -20,7 +20,7 @@ sudo snap install --classic code
 echo "Installing Git..."
 sudo apt install git -y
 
-echo "Creating Git aliases..."
+echo "Creating some aliases..."
 alias ga='git add'
 alias gbr='git branch'
 alias gc='git commit -m'
