@@ -78,4 +78,4 @@ pip install distutils
 sudo echo >> /etc/hosts
 sudo echo "127.0.1.1  danfern3.42.fr" >> /etc/hosts
 
-echo "Once the repo has been clone, run 'sudo chmod 777 -R .git/'"
+echo "Once the repo has been clone, if you have problems with permissions run 'sudo chmod 777 -R .git/'"
