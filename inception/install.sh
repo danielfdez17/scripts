@@ -40,7 +40,6 @@ if [ ! -d "inception" ]; then
 fi
 
 cd inception
-git switch dev-alpine-2
 
 echo "Installing Docker"
 sudo apt update && sudo apt upgrade -y
