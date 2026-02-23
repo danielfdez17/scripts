@@ -7,9 +7,9 @@
 
 ### Evolve/Hacking
 - [ ] Script to automate conversion from .vmx to .ova
-
+	This script should be executed from everywhere (add to /bin or /sbin folder) and should receive the .vmx and the name of the .ova file 
 #### Inception 42
 - [x] Script to create inception folder structure
 - [x] Script to populate inception files
 	- [x] Problem with php-fpm
-- [ ] Script to set up FTP in the VM 
+- [x] Script to set up FTP in the VM 
