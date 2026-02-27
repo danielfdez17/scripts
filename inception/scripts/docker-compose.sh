@@ -49,18 +49,10 @@ volumes:
   # Volumen Docker para los archivos de WordPress
   wp_data:
     driver: local
-    driver_opts:
-      type: none
-      device: /home/danfern3/data/web
-      o: bind
 
   # Volumen Docker para la base de datos
   db_data:
     driver: local
-    driver_opts:
-      type: none
-      device: /home/danfern3/data/mariadb
-      o: bind
 
 networks:
   inception-network:
