@@ -19,6 +19,7 @@ setup_git_aliases() {
     alias gls='git ls-files'
     alias grv='git remote -v'
     alias gco='git checkout'
+    alias gbr='git branch'
 }
 
 setup_git_aliases
