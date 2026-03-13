@@ -18,6 +18,7 @@ setup_git_aliases() {
     alias gpr='git pull --rebase'
     alias gls='git ls-files'
     alias grv='git remote -v'
+    alias gco='git checkout'
 }
 
 setup_git_aliases
