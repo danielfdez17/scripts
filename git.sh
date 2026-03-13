@@ -10,14 +10,14 @@ fi
 
 setup_git_aliases() {
     echo "Setting up Git aliases..."
-    alias gss='git status -s' \
-    && alias ga='git add' \
-    && alias gc='git commit -m' \
-    && alias gp='git push' \
-    && alias gl='git log --oneline --graph --decorate' \
-    && alias gpr='git pull --rebase' \
-    && alias gls='git ls-files' \
-    && alias grv='git remote -v'
+    alias gss='git status -s'
+    alias ga='git add'
+    alias gc='git commit -m'
+    alias gp='git push'
+    alias gl='git log --oneline --graph --decorate'
+    alias gpr='git pull --rebase'
+    alias gls='git ls-files'
+    alias grv='git remote -v'
 }
 
 setup_git_aliases
