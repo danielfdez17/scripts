@@ -20,6 +20,9 @@ setup_git_aliases() {
     alias grv='git remote -v'
     alias gco='git checkout'
     alias gbr='git branch'
+    echo "All aliases have been configured"
 }
 
 setup_git_aliases
+
+
