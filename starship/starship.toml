@@ -1,0 +1,32 @@
+format = """
+$time\
+$directory\
+$git_branch\
+$git_status\
+$fill\
+$c\
+$cpp\
+$python\
+$nodejs\
+$docker_context\
+$jobs\
+$cmd_duration\
+$line_break\
+$status\
+$character"""
+
+[time]
+disabled = false
+format = '[$time ](bold yellow)'
+
+[fill]
+symbol = ' '
+
+[status]
+disabled = false
+symbol = ''
+
+[character]
+success_symbol = '[➜](bold green)'
+error_symbol = '[✗](bold red) '
+
