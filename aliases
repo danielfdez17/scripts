@@ -14,6 +14,7 @@ alias gp='git push'
 alias gpr='git pull --rebase'
 alias grv='git remote -v'
 alias gss='git status -s'
+alias gw='git worktree'
 
 # Makefile
 # This makes the make execution to go faster
