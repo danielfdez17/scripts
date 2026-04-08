@@ -8,10 +8,10 @@ RESET := \033[0m
 CYAN := \033[0;36m
 ORANGE := \033[0;31m
 RED := \033[0;31m
-SUCCESS := $(GREEN)✓$(RESET)
-FAIL := $(RED)✗$(RESET)
-INFO := $(CYAN)ℹ$(RESET)
-WARN := $(YELLOW)⚠$(RESET)
+SUCCESS := $(GREEN)✓
+FAIL := $(RED)✗
+INFO := $(CYAN)ℹ
+WARN := $(YELLOW)⚠
 
 .PHONY: help
 .DEFAULT_GOAL := help
