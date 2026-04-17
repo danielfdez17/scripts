@@ -1,8 +1,11 @@
 # General purpose
+```bash
 alias ..='cd ..'
 alias ...='cd ../..'
+```
 
 # Git
+```bash
 alias ga='git add'
 alias gbr='git branch'
 alias gc='git commit -m'
@@ -15,11 +18,15 @@ alias gpr='git pull --rebase'
 alias grv='git remote -v'
 alias gss='git status -s'
 alias gw='git worktree'
+```
 
 # Makefile
 # This makes the make execution to go faster
+```bash
 alias make='make -j$(nproc)'
+```
 
 # K8s
+```bash
 alias kubectl="minikube kubectl --"
-
+```
