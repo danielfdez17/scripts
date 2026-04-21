@@ -10,7 +10,12 @@ OK="$GREEN🗸"
 ERROR="$RED✗"
 WARNING="$YELLOW⚠"
 
-current_branch=$(git branch --show-current)
+if [ -z "$1" ]; then
+  echo -e "$ERROR No branch name provided. Please specify the branch to push as an argument.$RESET"
+  exit 1
+fi
+
+current_branch=$1
 
 echo "Pushing $current_branch to origin..."
 git push -u origin "$current_branch" || { echo -e "$ERROR Failed to push $current_branch to origin. Please ensure you have permission and try again.$RESET"; exit 1; }
