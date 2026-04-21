@@ -18,6 +18,6 @@ fi
 current_branch=$1
 
 echo "Pushing $current_branch to origin..."
-git push -u origin "$current_branch" || { echo -e "$ERROR Failed to push $current_branch to origin. Please ensure you have permission and try again.$RESET"; exit 1; }
+git push origin HEAD:"$current_branch" || { echo -e "$ERROR Failed to push $current_branch to origin. Please ensure you have permission and try again.$RESET"; exit 1; }
 
 echo -e "$OK Successfully pushed $current_branch to origin.$RESET"
