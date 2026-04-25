@@ -7,7 +7,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 ORANGE='\033[0;33m'
 NC='\033[0m' # No Color
-INFO=$BLUE'[INFO]'
+# INFO=$BLUE'[INFO]'
 TODO=$ORANGE'[TODO]'
 # OK=$GREEN'[OK]'
 # ERROR=$RED'[ERROR]'
@@ -16,6 +16,7 @@ TODO=$ORANGE'[TODO]'
 OK="$GREEN🗸"
 ERROR="$RED✗"
 WARNING="$YELLOW⚠"
+INFO="$BLUEℹ"
 
 print_info()
 {

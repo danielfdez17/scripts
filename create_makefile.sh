@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e # Exit immediately if a command exits with a non-zero status, and treat unset variables as an error when substituting.
+
 # This script is used to create a default Makefile with some common targets for building and cleaning a project.
 makefile_file_target=Makefile.template
 cat <<EOL > $makefile_file_target
