@@ -81,7 +81,7 @@ update-submodules: ## Update git submodules
 
 delete-remote-branches: ## Delete remote branches passed as arguments, e.g., `make delete-remote-branches branch1`
 	@$(call print_banner,Deleting Remote Branches)
-	@bash git/delete_remote_branches.sh $$
+	@bash ./vendor/scripts/git/delete_remote_branches.sh $$@
 	@$(call print_success,Remote branches deleted successfully!)
 
 clone-scripts-submodule: ## Clone the scripts submodule
@@ -91,15 +91,15 @@ clone-scripts-submodule: ## Clone the scripts submodule
 
 remove-scripts-submodule: ## Remove the scripts submodule
 	@$(call print_banner,Removing Scripts Submodule)
-	@bash git/remove_submodule.sh vendor/scripts
+	@bash ./vendor/scripts/git/remove_submodule.sh vendor/scripts
 	@$(call print_success,Scripts submodule removed successfully!)
 
 merge-to-dev: ## Merge the current branch into 'develop'
 	@$(call print_banner,Merging Current Branch into 'dev')
-	@bash git/merge_to_dev.sh
+	@bash ./vendor/scripts/git/merge_to_dev.sh
 	@$(call print_success,Current branch merged into 'dev' successfully!)
 
 push-to-origin: ## Push the current branch to 'origin'
 	@$(call print_banner,Pushing Current Branch to 'origin')
-	@bash git/push_to_origin.sh
+	@bash ./vendor/scripts/git/push_to_origin.sh
 	@$(call print_success,Current branch pushed to 'origin' successfully!)
