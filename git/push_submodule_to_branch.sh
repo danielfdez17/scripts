@@ -2,9 +2,6 @@
 
 set -e
 
-. "$(dirname "$0")/../utils/colors.sh"
-
-
 if [ -z "$1" ]; then
   print_error "No branch name provided. Please specify the branch to push as an argument."
   exit 1

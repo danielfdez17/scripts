@@ -1,7 +1,5 @@
 #!/bin/bash
 
-. "$(dirname "$0")/../utils/colors.sh"
-
 if [ ! "$1" ]; then
 	print_error "This script should receive at least one GitHub repository name as argument"
 	exit 1
@@ -22,7 +20,7 @@ for repo in "$@"; do
 		print_error "Failed to clone repository '$repo'"
 		continue
 	fi
-	cd "$repo"
+	cd "$repo" || { print_error "Failed to enter repository '$repo'"; continue; }
 	# replace Copyright year in LICENSE file
 	# ! this should search for every past year and replace it with the current year, but for simplicity it will just replace 2025 with the current year
 	sed -i "s/2025/$(date +%Y)/g" LICENSE

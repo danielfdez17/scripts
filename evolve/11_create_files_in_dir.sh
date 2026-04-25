@@ -2,12 +2,12 @@
 
 dir="${1:-}"
 
-if [ -z $dir ]; then
+if [ -z "$dir" ]; then
 	echo "No folder destination has been provided :("
 	exit 1
 fi
 
-if [ -d $dir ]; then
+if [ -d "$dir" ]; then
 	for i in 1 2 3 4 5
 	do
 		touch "$dir/file$i.txt"

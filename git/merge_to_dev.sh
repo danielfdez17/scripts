@@ -2,8 +2,6 @@
 
 set -e
 
-. "$(dirname "$0")/../utils/colors.sh"
-
 # If the current branch is not develop, switch to develop first
 current_branch=$(git branch --show-current)
 

@@ -1,7 +1,5 @@
 #!/bin/bash
 
-. "$(dirname "$0")/../../utils/colors.sh"
-
 cat << EOF
 
 services:

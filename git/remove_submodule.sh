@@ -2,8 +2,6 @@
 
 set -e
 
-. "$(dirname "$0")/../utils/colors.sh"
-
 if [ ! -d ".git" ]; then
     print_error "This script must be run from the root of a git repository."
     exit 1

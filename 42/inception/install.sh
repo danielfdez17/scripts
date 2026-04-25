@@ -9,10 +9,10 @@ sudo apt install vim -y
 echo "Installing zsh..."
 sudo apt install zsh -y
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-chsh -s $(which zsh)
-sudo echo >> ~/.bashrc
-sudo echo >> ~/.bashrc
-sudo echo "zsh" >> ~/.bashrc
+chsh -s "$(which zsh)"
+echo | sudo tee -a ~/.bashrc
+echo | sudo tee -a ~/.bashrc
+echo "zsh" | sudo tee -a ~/.bashrc
 
 echo "Installing Visual Studio Code..."
 sudo snap install --classic code
@@ -39,7 +39,7 @@ if [ ! -d "inception" ]; then
   git clone https://github.com/danielfdez17/inception.git
 fi
 
-cd inception
+cd inception || exit
 
 echo "Installing Docker"
 sudo apt update && sudo apt upgrade -y
@@ -55,7 +55,7 @@ sudo systemctl enable docker
 docker --version
 # sudo docker run hello-world (check if it is installed)
 newgrp docker
-sudo usermod -aG docker $USER # (to run docker without sudo)
+sudo usermod -aG docker "$USER" # (to run docker without sudo)
 docker ps
 sudo systemctl enable docker
 
@@ -74,6 +74,6 @@ sudo apt install python3-pip -y
 echo "Installing distutils"
 pip install distutils
 
-sudo echo >> /etc/hosts
-sudo echo "127.0.1.1  danfern3.42.fr" >> /etc/hosts
+echo | sudo tee -a /etc/hosts
+echo "127.0.1.1  danfern3.42.fr" | sudo tee -a /etc/hosts
 

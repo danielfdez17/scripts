@@ -2,8 +2,6 @@
 
 set -e
 
-. "$(dirname "$0")/../utils/colors.sh"
-
 current_branch=$(git branch --show-current)
 
 print_info "Pushing $current_branch to origin..."

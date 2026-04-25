@@ -9,7 +9,7 @@ fi
 
 if [ -d "$route" ]; then
 	echo "Looking for txt files inside $route"
-	find $route -name *.txt
+	find "$route" -name "*.txt"
 	exit 0
 else
 	echo "Route does not exist :("

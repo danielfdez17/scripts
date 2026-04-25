@@ -1,7 +1,5 @@
 #!/bin/bash
 
-. "$(dirname "$0")/../utils/colors.sh"
-
 print_error "This script should receive the name of the 42 student"
 
 inception_folder="inception"
@@ -82,5 +80,5 @@ sh scripts/env.sh $inception_folder
 
 print_todo "Build Docker images and start containers"
 
-cd $inception_folder
+cd $inception_folder || { print_error "Failed to enter inception folder"; exit 1; }
 # make all

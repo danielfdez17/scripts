@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # ! This script is used to test the functionality of the project.
 # ! It runs a series of tests and outputs the results.
@@ -8,16 +8,9 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[1;34m'
-MAGENTA='\033[1;35m'
 BLUE='\033[0;36m'
 ORANGE='\033[0;33m'
-BOLD='\033[1m'
 NC='\033[0m' # ? No Color
-WARNING=$YELLOW'[WARNING]'
-INFO=$BLUE'[INFO]'
-OK=$GREEN'[OK]'
-ERROR=$RED'[KO]'
-TODO=$ORANGE'[TODO]'
 
 # * Top row (╭━━━╮) - round corners, full-span
 # * Bottom row (╰━━━╯) - round corners, full-span
@@ -28,53 +21,53 @@ TODO=$ORANGE'[TODO]'
 # * Column close (┣━┻━┫) - T-up (columns end above)
 
 print_top_left_corner() {
-	echo -n $ORANGE"╭"$NC
+	echo -n "$ORANGE╭$NC"
 }
 
 print_top_right_corner() {
-	echo $ORANGE"╮"$NC
+	echo "$ORANGE╮$NC"
 }
 
 print_bottom_left_corner() {
-	echo -n $ORANGE"╰"$NC
+	echo -n "$ORANGE╰$NC"
 }
 
 print_bottom_right_corner() {
-	echo $ORANGE"╯"$NC
+	echo "$ORANGE╯$NC"
 }
 
 print_horizontal_line() {
-	echo -n $ORANGE"━"$NC
+	echo -n "$ORANGE━$NC"
 }
 
 print_vertical_line() {
-	echo -n $ORANGE"┃"$NC
+	echo -n "$ORANGE┃$NC"
 }
 
 print_left_junction() {
-	echo -n $ORANGE"┣"$NC
+	echo -n "$ORANGE┣$NC"
 }
 
 print_right_junction() {
-	echo -n $ORANGE"┫"$NC
+	echo -n "$ORANGE┫$NC"
 }
 
 print_cross() {
-	echo -n $ORANGE"╋"$NC
+	echo -n "$ORANGE╋$NC"
 }
 
 print_top_junction() {
-	echo -n $ORANGE"┳"$NC
+	echo -n "$ORANGE┳$NC"
 }
 
 print_bottom_junction() {
-	echo -n $ORANGE"┻"$NC
+	echo -n "$ORANGE┻$NC"
 }
 
 print_table_separator() {
 	width=$1
 	print_left_junction
-	for i in $(seq 1 $width); do
+	for i in $(seq 1 "$width"); do
 		print_horizontal_line
 	done
 	print_right_junction
@@ -84,6 +77,8 @@ print_table_separator() {
 print_table_header_separator() {
 	# For: #, Moves, Result, Numbers (with cross junctions)
 	print_left_junction
+	for i in $(seq 1 8); do print_horizontal_line; done
+	print_cross
 	for i in $(seq 1 8); do print_horizontal_line; done
 	print_cross
 	for i in $(seq 1 8); do print_horizontal_line; done
@@ -103,12 +98,16 @@ print_table_top() {
 	print_top_junction
 	for i in $(seq 1 8); do print_horizontal_line; done
 	print_top_junction
+	for i in $(seq 1 8); do print_horizontal_line; done
+	print_top_junction
 	for i in $(seq 1 43); do print_horizontal_line; done
 	print_top_right_corner
 }
 
 print_table_bottom() {
 	print_bottom_left_corner
+	for i in $(seq 1 8); do print_horizontal_line; done
+	print_bottom_junction
 	for i in $(seq 1 8); do print_horizontal_line; done
 	print_bottom_junction
 	for i in $(seq 1 8); do print_horizontal_line; done
@@ -131,30 +130,10 @@ print_summary_bottom() {
 	print_bottom_right_corner
 }
 
-log_info() {
-	echo $INFO "$1" $NC
-}
-
-log_ok() {
-	echo $OK "$1" $NC
-}
-
-log_error() {
-	echo $ERROR "$1" $NC
-}
-
-log_warning() {
-	echo $MAGENTA "$1" $NC
-}
-
-log_todo() {
-	echo $TODO "$1" $NC
-}
-
 clear
-log_info "Glyphs for table formatting thanks to Dylan (https://github.com/Univers42/picine_cpp/blob/main/cpp_module04/ex03/postman.cpp)"
-log_warning "Making sure ./push_swap and ./checker are up to date"
-make bonus
+print_info "Glyphs for table formatting thanks to Dylan (https://github.com/Univers42/picine_cpp/blob/main/cpp_module04/ex03/postman.cpp)"
+print_warning "Make sure ./push_swap and ./checker are up to date"
+# make bonus
 
 generate_numbers() {
 	if [ -z "$1" ]; then
@@ -162,8 +141,8 @@ generate_numbers() {
 	else
 		max=$1
 	fi
-	seq -$max $max | shuf | head -n $max | tr "\n" " "
-	# shuf -i 1-$max -n $max | tr "\n" " "
+	seq -"$max" "$max" | shuf | head -n "$max" | tr "\n" " "
+	# shuf -i 1-"$max" -n "$max" | tr "\n" " "
 }
 
 test_n() {
@@ -178,7 +157,10 @@ test_n() {
 	min_moves=999999
 	
 	echo
-	log_info "Running $iterations iterations with $n numbers..."
+	print_info "Running $iterations iterations with $n numbers..."
+	total_time=0
+	max_time=0
+	min_time=999999999
 	echo
 	
 	# Print table header
@@ -188,6 +170,8 @@ test_n() {
 	print_vertical_line
 	printf " ${BLUE}%-6s${NC} " "Moves"
 	print_vertical_line
+	printf " ${BLUE}%-6s${NC} " "Time"
+	print_vertical_line
 	printf " ${BLUE}%-6s${NC} " "Result"
 	print_vertical_line
 	printf " ${BLUE}%-41s${NC} " "Generated Numbers"
@@ -195,14 +179,25 @@ test_n() {
 	echo
 	print_table_header_separator
 	
-	for i in $(seq 1 $iterations); do
-		numbers=$(generate_numbers $n)
-		moves=$(echo $numbers | xargs ./push_swap | wc -l)
-		checker_result=$(echo $numbers | xargs ./push_swap | ./checker $numbers)
+	for i in $(seq 1 "$iterations"); do
+		numbers=$(generate_numbers "$n")
+		# Measure time for push_swap (and checker) using milliseconds
+		start_ms=$(date +%s%3N)
+		output=$(echo "$numbers" | xargs ./push_swap)
+		moves=$(echo "$output" | wc -l)
+		checker_result=$(echo "$output" | ./checker "$numbers")
+		end_ms=$(date +%s%3N)
+		elapsed_ms=$((end_ms - start_ms))
+		time_formatted=$(awk "BEGIN {printf \"%.f\", $elapsed_ms}")
+		time_formatted=$(printf "%2s%s" "$time_formatted" "ms")
 		max_moves=$((moves > max_moves ? moves : max_moves))
 		min_moves=$((moves < min_moves ? moves : min_moves))
+
+		total_time=$((total_time + elapsed_ms))
+		max_time=$((elapsed_ms > max_time ? elapsed_ms : max_time))
+		min_time=$((elapsed_ms < min_time ? elapsed_ms : min_time))
 		
-		if [ $checker_result = "OK" ]; then
+		if [ "$checker_result" = "OK" ]; then
 			status_color=$GREEN
 			status_text="OK"
 			ok_checker=$((ok_checker + 1))
@@ -221,7 +216,7 @@ test_n() {
 		fi
 		
 		# Check if the number of moves is greater than the limit
-		if [ $moves -gt $limit ]; then
+		if [ "$moves" -gt "$limit" ]; then
 			move_color=$RED
 			bad_iterations=$((bad_iterations + 1))
 		else
@@ -233,13 +228,15 @@ test_n() {
 		num_formatted=$(printf '%-6s' "$i")
 		move_formatted=$(printf '%-6s' "$moves")
 		status_formatted=$(printf '%-6s' "$status_text")
-		numbers_limit=${#numbers_display}
+		time_formatted=$(printf '%-6s' "$time_formatted")
 		numbers_formatted=$(printf '%-41s' "$numbers_display")
 		
 		print_vertical_line
 		printf " %s " "$num_formatted"
 		print_vertical_line
 		printf " $move_color%s$NC " "$move_formatted"
+		print_vertical_line
+		printf " $BLUE%s$NC " "$time_formatted"
 		print_vertical_line
 		printf " $status_color%s$NC " "$status_formatted"
 		print_vertical_line
@@ -256,6 +253,7 @@ test_n() {
 	percentage_ko=$(awk "BEGIN {printf \"%.2f\", ($bad_iterations/$iterations)*100}")
 	checker_percentage_ok=$(awk "BEGIN {printf \"%.2f\", ($ok_checker/$iterations)*100}")
 	checker_percentage_ko=$(awk "BEGIN {printf \"%.2f\", ($ko_checker/$iterations)*100}")
+	avg_time=$(awk "BEGIN {printf \"%.2f\", $total_time/$iterations}")
 	avg_moves=$(awk "BEGIN {printf \"%.2f\", $total_moves/$iterations}")
 	
 	# Print summary table
@@ -308,6 +306,18 @@ test_n() {
 	print_vertical_line
 	echo
 	print_vertical_line
+	printf "   %-66s " "Average time: ${avg_time}ms (avg over $iterations iterations)"
+	print_vertical_line
+	echo
+	print_vertical_line
+	printf "   %-66s " "Max time: ${max_time}ms"
+	print_vertical_line
+	echo
+	print_vertical_line
+	printf "   %-66s " "Min time: ${min_time}ms"
+	print_vertical_line
+	echo
+	print_vertical_line
 	printf "   %-66s " "Max moves: $max_moves (limit: $limit)"
 	print_vertical_line
 	echo
@@ -321,35 +331,35 @@ test_n() {
 
 start() {
 	# ? Check if at least 2 integer arguments were provided
-	if [ $n -le 5 ]; then
-		test_n $n 12
-	elif [ $n -le 100 ]; then
-		test_n $n 700
-	elif [ $n -le 500 ]; then
-		test_n $n 5500
+	if [ "$n" -le 5 ]; then
+		test_n "$n" 12
+	elif [ "$n" -le 100 ]; then
+		test_n "$n" 700
+	elif [ "$n" -le 500 ]; then
+		test_n "$n" 5500
 	else
-		test_n $n $n
+		test_n "$n" "$n"
 	fi
 }
 
 # ? Check if ./push_swap exists
 if [ ! -f "./push_swap" ]; then
-	log_error "Error: ./push_swap not found. Please compile the project first."
+	print_error "Error: ./push_swap not found. Please compile the project first."
 	exit 1
 fi
 
 # ? Check if the first argument is provided, if not set it to 100
-if [ -z $1 ]; then
+if [ -z "$1" ]; then
 	iterations=100
 else
-	iterations=$1
+	iterations="$1"
 fi
 
 # ? Check if the second argument is provided, if not set it to 100
-if [ -z $2 ]; then
+if [ -z "$2" ]; then
 	n=100
 else
-	n=$2
+	n="$2"
 fi
 
 start

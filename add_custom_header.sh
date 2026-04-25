@@ -1,7 +1,5 @@
 #!/bin/bash
 
-. "$(dirname "$0")/utils/colors.sh"
-
 set -e # Exit immediately if a command exits with a non-zero status, and treat unset variables as an error when substituting.
 
 # This script is used to create a default header to files

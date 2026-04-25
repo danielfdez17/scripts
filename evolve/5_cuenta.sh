@@ -7,6 +7,6 @@ if [ ! -d "$dir" ]; then
 	exit 1
 fi
 
-count=$(ls -l $dir | wc -l)
+count=$(find "$dir" -type f | wc -l)
 
 echo "Archivos encontrados en $dir: $count"

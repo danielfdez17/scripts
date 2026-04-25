@@ -4,13 +4,11 @@ set -e
 
 GREEN="\033[32m"
 RED="\033[31m"
-YELLOW="\033[33m"
 RESET="\033[0m"
 OK="$GREEN🗸"
 ERROR="$RED✗"
-WARNING="$YELLOW⚠"
 
-files=$(ls -a | grep .env || true)
+files=$(find . -maxdepth 1 -name ".env" -type f)
 
 echo -e "Checking for .env files..."
 

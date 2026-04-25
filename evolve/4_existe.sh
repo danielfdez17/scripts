@@ -9,7 +9,7 @@ fi
 
 if [ -f "$archivo" ]; then
 	echo "Visualizando archivo..."
-	cat $archivo
+	cat "$archivo"
 	echo "Saliendo del script..."
 	exit 0
 else

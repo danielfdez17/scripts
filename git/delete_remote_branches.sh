@@ -2,8 +2,6 @@
 
 set -e
 
-. "$(dirname "$0")/../utils/colors.sh"
-
 if [ -z "$1" ]; then
     print_error "Please provide at least one branch name as an argument."
     exit 1

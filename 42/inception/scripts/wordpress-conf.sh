@@ -4,7 +4,7 @@
 cat << EOF
 
 ; Start a new pool named 'www'.
-; the variable $pool can be used in any directive and will be replaced by the
+; the variable \$pool can be used in any directive and will be replaced by the
 ; pool name ('www' here)
 [www]
 user = root
@@ -31,7 +31,7 @@ clear_env = no
 ; When not set, the global prefix (or /usr) applies instead.
 ; Note: This directive can also be relative to the global prefix.
 ; Default Value: none
-;prefix = /path/to/pools/$pool
+;prefix = /path/to/pools/\$pool
 
 ; Unix user/group of the child processes. This can be used only if the master
 ; process running user is root. It is set after the child process is created.
@@ -309,7 +309,7 @@ pm.max_spare_servers = 3
 
 ; The access log file
 ; Default: not set
-;access.log = log/php82/$pool.access.log
+;access.log = log/php82/\$pool.access.log
 
 ; The access log format.
 ; The following syntax is allowed
@@ -389,7 +389,7 @@ pm.max_spare_servers = 3
 ; The log file for slow requests
 ; Default Value: not set
 ; Note: slowlog is mandatory if request_slowlog_timeout is set
-;slowlog = log/php82/$pool.slow.log
+;slowlog = log/php82/\$pool.slow.log
 
 ; The timeout for serving a single request after which a PHP backtrace will be
 ; dumped to the 'slowlog' file. A value of '0s' means 'off'.
@@ -427,7 +427,7 @@ pm.max_spare_servers = 3
 
 ; Chroot to this directory at the start. This value must be defined as an
 ; absolute path. When this value is not set, chroot is not used.
-; Note: you can prefix with '$prefix' to chroot to the pool prefix or one
+; Note: you can prefix with '\$prefix' to chroot to the pool prefix or one
 ; of its subdirectories. If the pool prefix is not set, the global prefix
 ; will be used instead.
 ; Note: chrooting is a great security feature and should be used whenever
@@ -472,7 +472,7 @@ pm.max_spare_servers = 3
 ; Default Value: .php
 ;security.limit_extensions = .php .php3 .php4 .php5 .php7
 
-; Pass environment variables like LD_LIBRARY_PATH. All $VARIABLEs are taken from
+; Pass environment variables like LD_LIBRARY_PATH. All VARIABLEs are taken from
 ; the current environment.
 ; Default Value: clean env
 ;env[HOSTNAME] = $HOSTNAME
@@ -502,7 +502,7 @@ pm.max_spare_servers = 3
 ;                specified at startup with the -d argument
 ;php_admin_value[sendmail_path] = /usr/sbin/sendmail -t -i -f www@my.domain.com
 ;php_flag[display_errors] = off
-;php_admin_value[error_log] = /var/log/php82/$pool.error.log
+;php_admin_value[error_log] = /var/log/php82/\$pool.error.log
 ;php_admin_flag[log_errors] = on
 ;php_admin_value[memory_limit] = 32M
 
