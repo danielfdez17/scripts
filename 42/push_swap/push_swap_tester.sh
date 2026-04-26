@@ -21,47 +21,47 @@ NC='\033[0m' # ? No Color
 # * Column close (┣━┻━┫) - T-up (columns end above)
 
 print_top_left_corner() {
-	echo -n "$ORANGE╭$NC"
+	echo -en "$ORANGE╭$NC"
 }
 
 print_top_right_corner() {
-	echo "$ORANGE╮$NC"
+	echo -e "$ORANGE╮$NC"
 }
 
 print_bottom_left_corner() {
-	echo -n "$ORANGE╰$NC"
+	echo -en "$ORANGE╰$NC"
 }
 
 print_bottom_right_corner() {
-	echo "$ORANGE╯$NC"
+	echo -e "$ORANGE╯$NC"
 }
 
 print_horizontal_line() {
-	echo -n "$ORANGE━$NC"
+	echo -en "$ORANGE━$NC"
 }
 
 print_vertical_line() {
-	echo -n "$ORANGE┃$NC"
+	echo -en "$ORANGE┃$NC"
 }
 
 print_left_junction() {
-	echo -n "$ORANGE┣$NC"
+	echo -en "$ORANGE┣$NC"
 }
 
 print_right_junction() {
-	echo -n "$ORANGE┫$NC"
+	echo -en "$ORANGE┫$NC"
 }
 
 print_cross() {
-	echo -n "$ORANGE╋$NC"
+	echo -en "$ORANGE╋$NC"
 }
 
 print_top_junction() {
-	echo -n "$ORANGE┳$NC"
+	echo -en "$ORANGE┳$NC"
 }
 
 print_bottom_junction() {
-	echo -n "$ORANGE┻$NC"
+	echo -en "$ORANGE┻$NC"
 }
 
 print_table_separator() {
