@@ -135,6 +135,16 @@ print_info "Glyphs for table formatting thanks to Dylan (https://github.com/Univ
 print_warning "Make sure ./push_swap and ./checker are up to date"
 # make bonus
 
+if [ ! -f "./push_swap" ]; then
+	print_error "Error: ./push_swap not found. Please compile the project first."
+	exit 1
+fi
+
+if [ ! -f "./checker" ]; then
+	print_error "Error: ./checker not found. Please compile the project first."
+	exit 1
+fi
+
 generate_numbers() {
 	if [ -z "$1" ]; then
 		max=100
