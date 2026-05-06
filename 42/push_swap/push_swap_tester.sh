@@ -131,17 +131,21 @@ print_summary_bottom() {
 }
 
 clear
-print_info "Glyphs for table formatting thanks to Dylan (https://github.com/Univers42/picine_cpp/blob/main/cpp_module04/ex03/postman.cpp)"
-print_warning "Make sure ./push_swap and ./checker are up to date"
+glyph_source_msg="Glyphs for table formatting thanks to Dylan (https://github.com/Univers42/picine_cpp/blob/main/cpp_module04/ex03/postman.cpp)"
+print_info "$glyph_source_msg" || echo "$glyph_source_msg"
+build_warning_msg="Make sure ./push_swap and ./checker are up to date"
+print_warning "$build_warning_msg" || echo "$build_warning_msg"
 # make bonus
 
 if [ ! -f "./push_swap" ]; then
-	print_error "Error: ./push_swap not found. Please compile the project first."
+	error_msg="Error: ./push_swap not found. Please compile the project first."
+	print_error "$error_msg" || echo "$error_msg"
 	exit 1
 fi
 
 if [ ! -f "./checker" ]; then
-	print_error "Error: ./checker not found. Please compile the project first."
+	error_msg="Error: ./checker not found. Please compile the project first."
+	print_error "$error_msg" || echo "$error_msg"
 	exit 1
 fi
 
@@ -167,7 +171,8 @@ test_n() {
 	min_moves=999999
 	
 	echo
-	print_info "Running $iterations iterations with $n numbers..."
+	iterations_info_msg="Running $iterations iterations with $n numbers..."
+	print_info "$iterations_info_msg" || echo "$iterations_info_msg"
 	total_time=0
 	max_time=0
 	min_time=999999999

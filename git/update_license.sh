@@ -1,26 +1,33 @@
 #!/bin/bash
 
 if [ ! "$1" ]; then
-	print_error "This script should receive at least one GitHub repository name as argument"
+	error_msg="This script should receive at least one GitHub repository name as argument"
+	print_error "$error_msg" || echo "$error_msg"
 	exit 1
 fi
 
-print_info "Updating license file in all repositories..."
+updating_license_msg="Updating license file in all repositories..."
+print_info "$updating_license_msg" || echo "$updating_license_msg"
 for repo in "$@"; do
 	# Check if repository exists
-	print_info "Checking if repository '$repo' exists..."
+	checking_repo_msg="Checking if repository '$repo' exists..."
+	print_info "$checking_repo_msg" || echo "$checking_repo_msg"
 	if ! timeout 10 git ls-remote https://github.com/danielfdez17/"$repo".git &>/dev/null; then
-		print_error "Repository '$repo' does not exist or is not accessible"
+		not_found_msg="Repository '$repo' does not exist or is not accessible"
+		print_error "$not_found_msg" || echo "$not_found_msg"
 		continue
 	fi
 	
-	print_info "Cloning repository '$repo'..."
+	cloining_repo_msg="Cloning repository '$repo'..."
+	print_info "$cloining_repo_msg" || echo "$cloining_repo_msg"
 	git clone git@github.com:danielfdez17/"$repo".git
 	if [ ! -d "$repo" ]; then
-		print_error "Failed to clone repository '$repo'"
+		error_cloning_msg="Failed to clone repository '$repo'"
+		print_error "$error_cloning_msg" || echo "$error_cloning_msg"
 		continue
 	fi
-	cd "$repo" || { print_error "Failed to enter repository '$repo'"; continue; }
+	error_entering_msg="Failed to enter repository '$repo'"
+	cd "$repo" || { print_error "$error_entering_msg" || echo "$error_entering_msg"; continue; }
 	# replace Copyright year in LICENSE file
 	# ! this should search for every past year and replace it with the current year, but for simplicity it will just replace 2025 with the current year
 	sed -i "s/2025/$(date +%Y)/g" LICENSE
