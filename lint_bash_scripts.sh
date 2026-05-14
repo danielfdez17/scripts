@@ -14,11 +14,24 @@ fi
 # Find all .sh files in the project and lint them
 linting_msg="Linting bash scripts with shellcheck..."
 print_info "$linting_msg" || echo "$linting_msg"
-find . -type f -name "*.sh" -not -path "./node_modules/*" -not -path "./dist/*" -not -path "./build/*" | while read -r script; do
+total_scripts=0
+successful_lints=0
+failed_lints=0
+# Use process substitution so loop counters are updated in the current shell.
+while read -r script; do
+    total_scripts=$((total_scripts + 1))
     linting_script_msg="Linting $script..."
     print_info "$linting_script_msg" || echo "$linting_script_msg"
     error_linting_msg="Linting failed for $script. Please fix the issues and try again."
-    shellcheck -x "$script" || { print_error "$error_linting_msg" || echo "$error_linting_msg"; continue; }
+    shellcheck -x "$script" || { print_error "$error_linting_msg" || echo "$error_linting_msg"; failed_lints=$((failed_lints + 1)); continue; }
     success_linting_msg="No issues found in $script."
     print_ok "$success_linting_msg" || echo "$success_linting_msg"
-done
+    successful_lints=$((successful_lints + 1))
+done < <(find . -type f -name "*.sh" -not -path "./node_modules/*" -not -path "./dist/*" -not -path "./build/*")
+
+summary_msg="Linting complete: $successful_lints successful, $failed_lints failed, out of $total_scripts scripts."
+if [ "$failed_lints" -eq 0 ]; then
+    print_ok "$summary_msg" || echo "$summary_msg"
+else
+    print_error "$summary_msg" || echo "$summary_msg"
+fi
