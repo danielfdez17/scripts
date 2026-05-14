@@ -99,6 +99,11 @@ merge-to-dev: ## Merge the current branch into 'develop'
 	@bash ./vendor/scripts/git/merge_to_dev.sh
 	@$(call print_success,Current branch merged into 'dev' successfully!)
 
+merge-dev-to-main: ## Merge 'develop' into 'main'
+	@$(call print_banner,Merging 'develop' into 'main')
+	@bash ./vendor/scripts/git/merge_dev_to_main.sh
+	@$(call print_success,'develop' merged into 'main' successfully!)
+
 push-to-origin: ## Push the current branch to 'origin'
 	@$(call print_banner,Pushing Current Branch to 'origin')
 	@bash ./vendor/scripts/git/push_to_origin.sh
