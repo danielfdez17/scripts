@@ -33,7 +33,6 @@ CROSS_JUNCTION := $(ORANGE)┣$(RESET)$(ORANGE)━$(RESET)$(ORANGE)┫$(RESET)
 OPEN_JUNCTION := $(ORANGE)┣$(RESET)$(ORANGE)━$(RESET)$(ORANGE)┫$(RESET)
 CLOSE_JUNCTION := $(ORANGE)┣$(RESET)$(ORANGE)━$(RESET)$(ORANGE)┫$(RESET)
 
-.PHONY: help
 .DEFAULT_GOAL := help
 
 # Reusable text banner: $(call print_banner,Your message)
@@ -65,6 +64,7 @@ define print_success
 echo -e "$(SUCCESS) $(1)$(RESET)"
 endef
 
+.PHONY: help
 help: ## Show available targets
 	@$(call print_banner,Available Makefile Targets)
 	@echo ""
@@ -73,37 +73,43 @@ help: ## Show available targets
 	@echo ""
 
 # ── Utils ────────────────────────────────────────────────────────────────
-.PHONY: update-submodules delete-remote-branches clone-scripts-submodule remove-scripts-submodule merge-to-dev push-to-origin
+.PHONY: update-submodules
 update-submodules: ## Update git submodules
 	@$(call print_banner,Updating Git Submodules)
 	@git submodule update --init --recursive --remote
 	@$(call print_success,Git submodules updated successfully!)
 
+.PHONY: delete-remote-branches
 delete-remote-branches: ## Delete remote branches passed as arguments, e.g., `make delete-remote-branches branch1`
 	@$(call print_banner,Deleting Remote Branches)
 	@bash ./vendor/scripts/git/delete_remote_branches.sh $$@
 	@$(call print_success,Remote branches deleted successfully!)
 
+.PHONY: clone-scripts-submodule
 clone-scripts-submodule: ## Clone the scripts submodule
 	@$(call print_banner,Cloning Scripts Submodule)
 	@git submodule add https://github.com/danielfdez17/scripts.git ./vendor/scripts
 	@$(call print_success,Scripts submodule cloned successfully!)
 
+.PHONY: remove-scripts-submodule
 remove-scripts-submodule: ## Remove the scripts submodule
 	@$(call print_banner,Removing Scripts Submodule)
 	@bash ./vendor/scripts/git/remove_submodule.sh vendor/scripts
 	@$(call print_success,Scripts submodule removed successfully!)
 
+.PHONY: merge-to-dev
 merge-to-dev: ## Merge the current branch into 'develop'
 	@$(call print_banner,Merging Current Branch into 'dev')
 	@bash ./vendor/scripts/git/merge_to_dev.sh
 	@$(call print_success,Current branch merged into 'dev' successfully!)
 
+.PHONY: merge-dev-to-main
 merge-dev-to-main: ## Merge 'develop' into 'main'
 	@$(call print_banner,Merging 'develop' into 'main')
 	@bash ./vendor/scripts/git/merge_dev_to_main.sh
 	@$(call print_success,'develop' merged into 'main' successfully!)
 
+.PHONY: push-to-origin
 push-to-origin: ## Push the current branch to 'origin'
 	@$(call print_banner,Pushing Current Branch to 'origin')
 	@bash ./vendor/scripts/git/push_to_origin.sh
