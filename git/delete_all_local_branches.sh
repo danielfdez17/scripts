@@ -8,6 +8,10 @@ print_info "$delete_all_local_branches_msg" || echo "$delete_all_local_branches_
 warning_msg="This will permanently delete all local branches except main and develop. Please ensure you have pushed any important changes to remote before proceeding."
 print_warning "$warning_msg" || echo "$warning_msg"
 
+local_branches=$(git branch | grep -v "main\|develop")
+local_branches_msg="The following local branches will be deleted:\n$local_branches"
+print_info "$local_branches_msg" || echo "$local_branches_msg"
+
 read -rp "Are you sure you want to proceed? (y/n) " confirmation
 
 if [[ $confirmation == "y" ]]; then
