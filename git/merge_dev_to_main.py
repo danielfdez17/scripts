@@ -43,5 +43,3 @@ if __name__ == "__main__":
             Failed to push changes to remote main branch.
             Please resolve any conflicts and try again.
         """)
-            Please resolve any conflicts and try again.
-        """)
