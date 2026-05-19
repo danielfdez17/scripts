@@ -19,7 +19,7 @@ if __name__ == "__main__":
     """)
 
     try:
-        subprocess.run(["git", "checkout", "main"], check=True)
+        subprocess.run(["git", "switch", "main"], check=True)
     except subprocess.CalledProcessError:
         print("""
             Failed to switch to main branch. 
@@ -33,5 +33,15 @@ if __name__ == "__main__":
     except subprocess.CalledProcessError:
         print("""
             Failed to merge develop into main.
+            Please resolve any conflicts and try again.
+        """)
+    print("\n Pushing changes to remote main branch...")
+    try:
+        subprocess.run(["git", "push", "-u", "origin", "main"], check=True)
+    except subprocess.CalledProcessError:
+        print("""
+            Failed to push changes to remote main branch.
+            Please resolve any conflicts and try again.
+        """)
             Please resolve any conflicts and try again.
         """)
