@@ -12,7 +12,6 @@ RESET = "\033[0m"
 
 if __name__ == "__main__":
     from pathlib import Path
-    import sys
     import subprocess
 
     summary = {"successful": 0, "failed": 0}
@@ -21,7 +20,7 @@ if __name__ == "__main__":
         print(path.name)
         try:
             print(f"{INFO}Linting {path}...")
-            result = subprocess.run([sys.executable, '-m', 'pylint', str(path)], check=True)
+            result = subprocess.run(['pylint', str(path)], check=True)
             if result.returncode == 0:
                 summary["successful"] += 1
             else:
