@@ -118,5 +118,5 @@ push-to-origin: ## Push the current branch to 'origin'
 .PHONY: collect-git-commit-history
 collect-git-commit-history: ## Collect git commit history into a file
 	@$(call print_banner,Collecting Git Commit History)
-	@cd 42/transcendencegss; rm -rf commits.sqlite3; python3 store_github_commit_history.py --repos-file transcendence_local.txt --db commits.sqlite3
+	@cd 42/transcendence; rm -rf commits.sqlite3; python3 store_github_commit_history.py --repos-file transcendence_local.txt --db commits.sqlite3
 	@$(call print_success,Git commit history collected successfully!)
