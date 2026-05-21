@@ -263,6 +263,7 @@ def store_repository(connection: sqlite3.Connection, reference: str, token: Opti
         print(f"Collecting {full_name}...")
 
         with connection:
+            record_repository_status(connection, full_name, "collecting", None, 0, 0)
             connection.execute("DELETE FROM commits WHERE repo_full_name = ?", (full_name,))
             connection.execute("DELETE FROM committer_counts WHERE repo_full_name = ?", (full_name,))
 
