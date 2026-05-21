@@ -1,0 +1,1136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GitHub Commit History Report</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f1e8;
+      --panel: #fffdf8;
+      --ink: #1f2933;
+      --muted: #65717e;
+      --accent: #0f766e;
+      --accent-soft: #d6f0ec;
+      --warning: #b45309;
+      --warning-soft: #fef3c7;
+      --error: #b91c1c;
+      --error-soft: #fee2e2;
+      --border: #e6ddd0;
+      --shadow: 0 20px 45px rgba(31, 41, 51, 0.08);
+    }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--ink);
+      background: radial-gradient(circle at top, #fff8ea 0, var(--bg) 48%, #efe7db 100%);
+    }
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 20px 56px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #173f5f 0%, #0f766e 100%);
+      color: white;
+      border-radius: 24px;
+      padding: 30px 32px;
+      box-shadow: var(--shadow);
+    }
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 4vw, 3.6rem);
+      letter-spacing: -0.03em;
+    }
+    .hero p {
+      margin: 0;
+      max-width: 64ch;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.88);
+    }
+    .summary-card {
+      margin: 18px 0 30px;
+      padding: 22px 24px;
+      background: linear-gradient(180deg, #ffffff 0%, #fffaf1 100%);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+    }
+    .summary-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .summary-header h2 {
+      margin: 0;
+      font-size: 1.45rem;
+    }
+    .eyebrow {
+      margin: 0 0 6px;
+      color: var(--accent);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .summary-total {
+      min-width: 160px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(15, 118, 110, 0.12);
+      text-align: right;
+    }
+    .summary-total .label {
+      display: block;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .summary-total strong {
+      display: block;
+      margin-top: 6px;
+      font-size: 1.8rem;
+      color: var(--accent);
+    }
+    .contributor-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .contributor-list li {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: #faf7f0;
+      border: 1px solid var(--border);
+      display: grid;
+      gap: 4px;
+    }
+    .contributor-list li strong {
+      font-size: 1rem;
+    }
+    .contributor-list li span {
+      color: var(--muted);
+      font-size: 0.93rem;
+      line-height: 1.4;
+    }
+    .contributor-list li .email {
+      display: block;
+      font-size: 0.88rem;
+      margin: 2px 0;
+    }
+    .contributor-list li .email a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .contributor-list li .email a:hover {
+      text-decoration: underline;
+    }
+    .overview {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin: 22px 0 30px;
+    }
+    .overview .tile, .repo-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+    }
+    .overview .tile {
+      padding: 18px 20px;
+    }
+    .overview .tile .label, .stats .label, .meta {
+      color: var(--muted);
+    }
+    .overview .tile strong, .stats strong {
+      display: block;
+      font-size: 1.7rem;
+      margin-top: 6px;
+    }
+    .repo-card {
+      padding: 22px 24px 18px;
+      margin-bottom: 18px;
+    }
+    .repo-card header {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .repo-card h2 {
+      margin: 0;
+      font-size: 1.45rem;
+    }
+    .meta {
+      margin: 6px 0 0;
+      font-size: 0.95rem;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .status-success { background: var(--accent-soft); color: var(--accent); }
+    .status-error { background: var(--error-soft); color: var(--error); }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .stats div {
+      background: #faf7f0;
+      border-radius: 18px;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+    }
+    .chart {
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+    .chart rect { fill: #0f766e; }
+    .chart-label {
+      fill: var(--ink);
+      font-size: 14px;
+      dominant-baseline: middle;
+    }
+    .chart-value {
+      fill: var(--muted);
+      font-size: 14px;
+      dominant-baseline: middle;
+      text-anchor: end;
+    }
+    .empty, .error { margin: 0; line-height: 1.6; }
+    .error {
+      margin-bottom: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: var(--error-soft);
+      color: var(--error);
+    }
+    .footer {
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    @media (max-width: 720px) {
+      .hero, .repo-card { padding-left: 18px; padding-right: 18px; }
+      .repo-card header { flex-direction: column; }
+      .status { align-self: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <h1>GitHub Commit History</h1>
+      <p>This report visualizes the repository history stored in the SQLite database, with per-repository totals and a bar chart for the top committers.</p>
+    </section>
+
+    
+    <section class="summary-card">
+      <div class="summary-header">
+        <div>
+          <p class="eyebrow">Contributors</p>
+          <h2>Contributor Summary</h2>
+        </div>
+        <div class="summary-total">
+          <span class="label">Unique contributors</span>
+          <strong>12</strong>
+        </div>
+      </div>
+      <ul class="contributor-list">
+        
+            <li>
+              <strong>LESdylan</strong>
+              <span class="email">dev.pro.photo@gmail.com</span>
+              <span>1861 commits across 15 repositories</span>
+            </li>
+            
+            <li>
+              <strong>dlesieur</strong>
+              <span class="email">dlesieur@dev.local</span>
+              <span>602 commits across 1 repositories</span>
+            </li>
+            
+            <li>
+              <strong>danielfdez17</strong>
+              <span class="email">daniel17dev@gmail.com</span>
+              <span>378 commits across 8 repositories</span>
+            </li>
+            
+            <li>
+              <strong>settes</strong>
+              <span class="email">ioanaroxana.st@gmail.com</span>
+              <span>223 commits across 7 repositories</span>
+            </li>
+            
+            <li>
+              <strong>DJSurgeon</strong>
+              <span class="email">djsurgeon83@gmail.com</span>
+              <span>110 commits across 5 repositories</span>
+            </li>
+            
+            <li>
+              <strong>Vado</strong>
+              <span class="email">vjannieto@gmail.com</span>
+              <span>98 commits across 6 repositories</span>
+            </li>
+            
+            <li>
+              <strong>serjimen</strong>
+              <span class="email">djsurgeon83@gmail.com</span>
+              <span>68 commits across 2 repositories</span>
+            </li>
+            
+            <li>
+              <strong>vjan-nie</strong>
+              <span class="email">vjan-nie@student.42madrid.com</span>
+              <span>51 commits across 6 repositories</span>
+            </li>
+            
+            <li>
+              <strong>GitHub</strong>
+              <span class="email">noreply@github.com</span>
+              <span>46 commits across 7 repositories</span>
+            </li>
+            
+            <li>
+              <strong>vjan-nie</strong>
+              <span class="email">vjan-nie@student.42madrid</span>
+              <span>12 commits across 1 repositories</span>
+            </li>
+            
+            <li>
+              <strong>AI Assistant</strong>
+              <span class="email">ai@example.com</span>
+              <span>1 commits across 1 repositories</span>
+            </li>
+            
+            <li>
+              <strong>test</strong>
+              <span class="email">test@gmail.com</span>
+              <span>1 commits across 1 repositories</span>
+            </li>
+            
+            <li>
+              <strong>vjan-nie</strong>
+              <span class="email">vjan-nie@student42madrid.com</span>
+              <span>1 commits across 1 repositories</span>
+            </li>
+            
+            <li>
+              <strong>vjan-nie</strong>
+              <span class="email">vjannieto@gmail.com</span>
+              <span>1 commits across 1 repositories</span>
+            </li>
+            
+      </ul>
+    </section>
+    
+
+    <section class="overview" aria-label="summary">
+      <div class="tile"><span class="label">Repositories</span><strong>24</strong></div>
+      <div class="tile"><span class="label">Total commits</span><strong>3453</strong></div>
+      <div class="tile"><span class="label">Top committers shown</span><strong>10</strong></div>
+    </section>
+
+    
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/DoD</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.147668+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>2</strong></div>
+        <div><span class="label">Committers</span><strong>1</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 72" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">GitHub</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">2</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/QA</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.154626+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>54</strong></div>
+        <div><span class="label">Committers</span><strong>4</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 174" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">vjan-nie</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">23</text>
+            </g>
+            
+            <g>
+              <text x="0" y="64" class="chart-label">Vado</text>
+              <rect x="280" y="49" width="296" height="18" rx="9"></rect>
+              <text x="614" y="64" class="chart-value">22</text>
+            </g>
+            
+            <g>
+              <text x="0" y="98" class="chart-label">settes</text>
+              <rect x="280" y="83" width="107" height="18" rx="9"></rect>
+              <text x="614" y="98" class="chart-value">8</text>
+            </g>
+            
+            <g>
+              <text x="0" y="132" class="chart-label">danielfdez17</text>
+              <rect x="280" y="117" width="13" height="18" rx="9"></rect>
+              <text x="614" y="132" class="chart-value">1</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/UI-Collection</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.110656+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>74</strong></div>
+        <div><span class="label">Committers</span><strong>1</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 72" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">settes</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">74</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/adapter-registry-api</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.126903+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>1</strong></div>
+        <div><span class="label">Committers</span><strong>1</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 72" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">LESdylan</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">1</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/email-api</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.142472+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>0</strong></div>
+        <div><span class="label">Committers</span><strong>0</strong></div>
+      </div>
+      
+      <p class="empty">No committer counts stored for this repository.</p>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/formula-engine</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.059504+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>87</strong></div>
+        <div><span class="label">Committers</span><strong>1</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 72" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">LESdylan</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">87</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/ft_transcendence</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.000970+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>164</strong></div>
+        <div><span class="label">Committers</span><strong>2</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 106" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">LESdylan</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">159</text>
+            </g>
+            
+            <g>
+              <text x="0" y="64" class="chart-label">GitHub</text>
+              <rect x="280" y="49" width="9" height="18" rx="9"></rect>
+              <text x="614" y="64" class="chart-value">5</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/libcss</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.172094+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>323</strong></div>
+        <div><span class="label">Committers</span><strong>2</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 106" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">LESdylan</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">317</text>
+            </g>
+            
+            <g>
+              <text x="0" y="64" class="chart-label">DJSurgeon</text>
+              <rect x="280" y="49" width="5" height="18" rx="9"></rect>
+              <text x="614" y="64" class="chart-value">6</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/markengine</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.095640+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>83</strong></div>
+        <div><span class="label">Committers</span><strong>6</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 242" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">danielfdez17</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">56</text>
+            </g>
+            
+            <g>
+              <text x="0" y="64" class="chart-label">DJSurgeon</text>
+              <rect x="280" y="49" width="60" height="18" rx="9"></rect>
+              <text x="614" y="64" class="chart-value">11</text>
+            </g>
+            
+            <g>
+              <text x="0" y="98" class="chart-label">settes</text>
+              <rect x="280" y="83" width="49" height="18" rx="9"></rect>
+              <text x="614" y="98" class="chart-value">9</text>
+            </g>
+            
+            <g>
+              <text x="0" y="132" class="chart-label">Vado</text>
+              <rect x="280" y="117" width="22" height="18" rx="9"></rect>
+              <text x="614" y="132" class="chart-value">4</text>
+            </g>
+            
+            <g>
+              <text x="0" y="166" class="chart-label">LESdylan</text>
+              <rect x="280" y="151" width="11" height="18" rx="9"></rect>
+              <text x="614" y="166" class="chart-value">2</text>
+            </g>
+            
+            <g>
+              <text x="0" y="200" class="chart-label">GitHub</text>
+              <rect x="280" y="185" width="5" height="18" rx="9"></rect>
+              <text x="614" y="200" class="chart-value">1</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/mini-baas</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.199224+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>109</strong></div>
+        <div><span class="label">Committers</span><strong>8</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 310" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">danielfdez17</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">61</text>
+            </g>
+            
+            <g>
+              <text x="0" y="64" class="chart-label">vjan-nie</text>
+              <rect x="280" y="49" width="60" height="18" rx="9"></rect>
+              <text x="614" y="64" class="chart-value">12</text>
+            </g>
+            
+            <g>
+              <text x="0" y="98" class="chart-label">GitHub</text>
+              <rect x="280" y="83" width="55" height="18" rx="9"></rect>
+              <text x="614" y="98" class="chart-value">11</text>
+            </g>
+            
+            <g>
+              <text x="0" y="132" class="chart-label">vjan-nie</text>
+              <rect x="280" y="117" width="50" height="18" rx="9"></rect>
+              <text x="614" y="132" class="chart-value">10</text>
+            </g>
+            
+            <g>
+              <text x="0" y="166" class="chart-label">Vado</text>
+              <rect x="280" y="151" width="40" height="18" rx="9"></rect>
+              <text x="614" y="166" class="chart-value">8</text>
+            </g>
+            
+            <g>
+              <text x="0" y="200" class="chart-label">LESdylan</text>
+              <rect x="280" y="185" width="20" height="18" rx="9"></rect>
+              <text x="614" y="200" class="chart-value">4</text>
+            </g>
+            
+            <g>
+              <text x="0" y="234" class="chart-label">serjimen</text>
+              <rect x="280" y="219" width="10" height="18" rx="9"></rect>
+              <text x="614" y="234" class="chart-value">2</text>
+            </g>
+            
+            <g>
+              <text x="0" y="268" class="chart-label">vjan-nie</text>
+              <rect x="280" y="253" width="5" height="18" rx="9"></rect>
+              <text x="614" y="268" class="chart-value">1</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/mini-baas-infra</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.076972+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>569</strong></div>
+        <div><span class="label">Committers</span><strong>4</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 174" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">LESdylan</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">486</text>
+            </g>
+            
+            <g>
+              <text x="0" y="64" class="chart-label">danielfdez17</text>
+              <rect x="280" y="49" width="47" height="18" rx="9"></rect>
+              <text x="614" y="64" class="chart-value">74</text>
+            </g>
+            
+            <g>
+              <text x="0" y="98" class="chart-label">vjan-nie</text>
+              <rect x="280" y="83" width="5" height="18" rx="9"></rect>
+              <text x="614" y="98" class="chart-value">8</text>
+            </g>
+            
+            <g>
+              <text x="0" y="132" class="chart-label">Vado</text>
+              <rect x="280" y="117" width="0" height="18" rx="9"></rect>
+              <text x="614" y="132" class="chart-value">1</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/mini-baas-sdk</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.088745+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>3</strong></div>
+        <div><span class="label">Committers</span><strong>1</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 72" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">LESdylan</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">3</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/mongo-api</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.132684+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>0</strong></div>
+        <div><span class="label">Committers</span><strong>0</strong></div>
+      </div>
+      
+      <p class="empty">No committer counts stored for this repository.</p>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/monkey-bot</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.160838+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>23</strong></div>
+        <div><span class="label">Committers</span><strong>3</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 140" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">danielfdez17</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">16</text>
+            </g>
+            
+            <g>
+              <text x="0" y="64" class="chart-label">settes</text>
+              <rect x="280" y="49" width="116" height="18" rx="9"></rect>
+              <text x="614" y="64" class="chart-value">6</text>
+            </g>
+            
+            <g>
+              <text x="0" y="98" class="chart-label">GitHub</text>
+              <rect x="280" y="83" width="19" height="18" rx="9"></rect>
+              <text x="614" y="98" class="chart-value">1</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/notion-database-sys</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.050986+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>921</strong></div>
+        <div><span class="label">Committers</span><strong>4</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 174" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">dlesieur</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">602</text>
+            </g>
+            
+            <g>
+              <text x="0" y="64" class="chart-label">LESdylan</text>
+              <rect x="280" y="49" width="140" height="18" rx="9"></rect>
+              <text x="614" y="64" class="chart-value">272</text>
+            </g>
+            
+            <g>
+              <text x="0" y="98" class="chart-label">danielfdez17</text>
+              <rect x="280" y="83" width="20" height="18" rx="9"></rect>
+              <text x="614" y="98" class="chart-value">40</text>
+            </g>
+            
+            <g>
+              <text x="0" y="132" class="chart-label">settes</text>
+              <rect x="280" y="117" width="3" height="18" rx="9"></rect>
+              <text x="614" y="132" class="chart-value">7</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/osionos</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.015540+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>453</strong></div>
+        <div><span class="label">Committers</span><strong>7</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 276" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">LESdylan</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">116</text>
+            </g>
+            
+            <g>
+              <text x="0" y="64" class="chart-label">settes</text>
+              <rect x="280" y="49" width="299" height="18" rx="9"></rect>
+              <text x="614" y="64" class="chart-value">112</text>
+            </g>
+            
+            <g>
+              <text x="0" y="98" class="chart-label">danielfdez17</text>
+              <rect x="280" y="83" width="291" height="18" rx="9"></rect>
+              <text x="614" y="98" class="chart-value">109</text>
+            </g>
+            
+            <g>
+              <text x="0" y="132" class="chart-label">Vado</text>
+              <rect x="280" y="117" width="160" height="18" rx="9"></rect>
+              <text x="614" y="132" class="chart-value">60</text>
+            </g>
+            
+            <g>
+              <text x="0" y="166" class="chart-label">DJSurgeon</text>
+              <rect x="280" y="151" width="130" height="18" rx="9"></rect>
+              <text x="614" y="166" class="chart-value">49</text>
+            </g>
+            
+            <g>
+              <text x="0" y="200" class="chart-label">vjan-nie</text>
+              <rect x="280" y="185" width="13" height="18" rx="9"></rect>
+              <text x="614" y="200" class="chart-value">5</text>
+            </g>
+            
+            <g>
+              <text x="0" y="234" class="chart-label">GitHub</text>
+              <rect x="280" y="219" width="5" height="18" rx="9"></rect>
+              <text x="614" y="234" class="chart-value">2</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/osionos-calendar</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.028615+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>14</strong></div>
+        <div><span class="label">Committers</span><strong>1</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 72" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">LESdylan</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">14</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/osionos-canvas</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.084119+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>0</strong></div>
+        <div><span class="label">Committers</span><strong>0</strong></div>
+      </div>
+      
+      <p class="empty">No committer counts stored for this repository.</p>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/osionos-mail</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.022574+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>29</strong></div>
+        <div><span class="label">Committers</span><strong>1</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 72" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">LESdylan</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">29</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/prismatica</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.180390+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>44</strong></div>
+        <div><span class="label">Committers</span><strong>2</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 106" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">LESdylan</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">43</text>
+            </g>
+            
+            <g>
+              <text x="0" y="64" class="chart-label">DJSurgeon</text>
+              <rect x="280" y="49" width="7" height="18" rx="9"></rect>
+              <text x="614" y="64" class="chart-value">1</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/prismatica-landing</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.103395+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>50</strong></div>
+        <div><span class="label">Committers</span><strong>3</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 140" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">DJSurgeon</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">43</text>
+            </g>
+            
+            <g>
+              <text x="0" y="64" class="chart-label">vjan-nie</text>
+              <rect x="280" y="49" width="28" height="18" rx="9"></rect>
+              <text x="614" y="64" class="chart-value">4</text>
+            </g>
+            
+            <g>
+              <text x="0" y="98" class="chart-label">Vado</text>
+              <rect x="280" y="83" width="21" height="18" rx="9"></rect>
+              <text x="614" y="98" class="chart-value">3</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/realtime-agnostic</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.120738+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>245</strong></div>
+        <div><span class="label">Committers</span><strong>2</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 106" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">LESdylan</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">244</text>
+            </g>
+            
+            <g>
+              <text x="0" y="64" class="chart-label">AI Assistant</text>
+              <rect x="280" y="49" width="1" height="18" rx="9"></rect>
+              <text x="614" y="64" class="chart-value">1</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/storage-router-api</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.137773+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>0</strong></div>
+        <div><span class="label">Committers</span><strong>0</strong></div>
+      </div>
+      
+      <p class="empty">No committer counts stored for this repository.</p>
+    </section>
+    
+
+    <section class="repo-card">
+      <header>
+        <div>
+          <h2>/home/daniel/projects/transcendence/transcendence</h2>
+          <p class="meta">Collected at 2026-05-21T09:09:17.190266+00:00</p>
+        </div>
+        <span class="status status-success">Success</span>
+      </header>
+      <div class="stats">
+        <div><span class="label">Commits</span><strong>205</strong></div>
+        <div><span class="label">Committers</span><strong>8</strong></div>
+      </div>
+      
+      <svg viewBox="0 0 720 310" class="chart" role="img" aria-label="Commit counts per committer">
+            <g>
+              <text x="0" y="30" class="chart-label">LESdylan</text>
+              <rect x="280" y="15" width="310" height="18" rx="9"></rect>
+              <text x="614" y="30" class="chart-value">84</text>
+            </g>
+            
+            <g>
+              <text x="0" y="64" class="chart-label">serjimen</text>
+              <rect x="280" y="49" width="243" height="18" rx="9"></rect>
+              <text x="614" y="64" class="chart-value">66</text>
+            </g>
+            
+            <g>
+              <text x="0" y="98" class="chart-label">GitHub</text>
+              <rect x="280" y="83" width="88" height="18" rx="9"></rect>
+              <text x="614" y="98" class="chart-value">24</text>
+            </g>
+            
+            <g>
+              <text x="0" y="132" class="chart-label">danielfdez17</text>
+              <rect x="280" y="117" width="77" height="18" rx="9"></rect>
+              <text x="614" y="132" class="chart-value">21</text>
+            </g>
+            
+            <g>
+              <text x="0" y="166" class="chart-label">settes</text>
+              <rect x="280" y="151" width="25" height="18" rx="9"></rect>
+              <text x="614" y="166" class="chart-value">7</text>
+            </g>
+            
+            <g>
+              <text x="0" y="200" class="chart-label">test</text>
+              <rect x="280" y="185" width="3" height="18" rx="9"></rect>
+              <text x="614" y="200" class="chart-value">1</text>
+            </g>
+            
+            <g>
+              <text x="0" y="234" class="chart-label">vjan-nie</text>
+              <rect x="280" y="219" width="3" height="18" rx="9"></rect>
+              <text x="614" y="234" class="chart-value">1</text>
+            </g>
+            
+            <g>
+              <text x="0" y="268" class="chart-label">vjan-nie</text>
+              <rect x="280" y="253" width="3" height="18" rx="9"></rect>
+              <text x="614" y="268" class="chart-value">1</text>
+            </g>
+            </svg>
+    </section>
+    
+
+    <p class="footer">Generated from commits.sqlite3. Re-run the collector before regenerating the report to refresh the numbers.</p>
+  </main>
+</body>
+</html>

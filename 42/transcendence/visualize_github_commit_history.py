@@ -38,9 +38,10 @@ class CommitterCount:
 
 @dataclass
 class ContributorSummary:
-  committer_name: str
-  commit_total: int
-  repository_total: int
+    committer_name: str
+    committer_email: str
+    commit_total: int
+    repository_total: int
 
 
 def parse_args() -> argparse.Namespace:
@@ -107,9 +108,9 @@ def load_committers(connection: sqlite3.Connection, repo_full_name: str, limit: 
 def load_contributors(connection: sqlite3.Connection, limit: int = 5) -> List[ContributorSummary]:
     rows = connection.execute(
         """
-        SELECT committer_name, SUM(commit_count) AS total_commits, COUNT(*) AS repository_total
+        SELECT committer_name, committer_email, SUM(commit_count) AS total_commits, COUNT(*) AS repository_total
         FROM committer_counts
-        GROUP BY committer_key, committer_name
+        GROUP BY committer_key, committer_name, committer_email
         ORDER BY total_commits DESC, committer_name ASC
         LIMIT ?
         """,
@@ -119,8 +120,9 @@ def load_contributors(connection: sqlite3.Connection, limit: int = 5) -> List[Co
     return [
         ContributorSummary(
             committer_name=row[0],
-            commit_total=row[1],
-            repository_total=row[2],
+            committer_email=row[1],
+            commit_total=row[2],
+            repository_total=row[3],
         )
         for row in rows
     ]
@@ -157,10 +159,12 @@ def render_contributor_summary_card(connection: sqlite3.Connection) -> str:
             """
             <li>
               <strong>{name}</strong>
+              {email_part}
               <span>{commits} commits across {repos} repositories</span>
             </li>
             """.format(
                 name=html.escape(contributor.committer_name),
+                email_part=f'<span class="email">{html.escape(contributor.committer_email)}</span>' if contributor.committer_email else '',
                 commits=contributor.commit_total,
                 repos=contributor.repository_total,
             )
@@ -386,6 +390,18 @@ def render_html(
       color: var(--muted);
       font-size: 0.93rem;
       line-height: 1.4;
+    }}
+    .contributor-list li .email {{
+      display: block;
+      font-size: 0.88rem;
+      margin: 2px 0;
+    }}
+    .contributor-list li .email a {{
+      color: var(--accent);
+      text-decoration: none;
+    }}
+    .contributor-list li .email a:hover {{
+      text-decoration: underline;
     }}
     .overview {{
       display: grid;

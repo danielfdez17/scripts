@@ -111,6 +111,7 @@ def ensure_schema(connection: sqlite3.Connection) -> None:
             repo_full_name TEXT NOT NULL,
             committer_key TEXT NOT NULL,
             committer_name TEXT NOT NULL,
+            committer_email TEXT,
             commit_count INTEGER NOT NULL,
             PRIMARY KEY (repo_full_name, committer_key),
             FOREIGN KEY (repo_full_name) REFERENCES repositories(full_name) ON DELETE CASCADE
@@ -230,6 +231,7 @@ def committer_key(name: str, email: str) -> str:
 def store_repository(connection: sqlite3.Connection, repository_reference: str) -> bool:
     commit_counts: DefaultDict[str, int] = defaultdict(int)
     committer_names: dict[str, str] = {}
+    committer_emails: dict[str, str] = {}
     commit_total = 0
 
     try:
@@ -248,6 +250,7 @@ def store_repository(connection: sqlite3.Connection, repository_reference: str) 
                 key = committer_key(committer_name, committer_email)
                 commit_counts[key] += 1
                 committer_names[key] = committer_name
+                committer_emails[key] = committer_email or ""
                 commit_total += 1
 
                 connection.execute(
@@ -275,10 +278,10 @@ def store_repository(connection: sqlite3.Connection, repository_reference: str) 
                 connection.execute(
                     """
                     INSERT OR REPLACE INTO committer_counts (
-                        repo_full_name, committer_key, committer_name, commit_count
-                    ) VALUES (?, ?, ?, ?)
+                        repo_full_name, committer_key, committer_name, committer_email, commit_count
+                    ) VALUES (?, ?, ?, ?, ?)
                     """,
-                    (full_name, key, committer_names[key], count),
+                    (full_name, key, committer_names[key], committer_emails[key], count),
                 )
 
             record_repository_status(connection, full_name, "success", None, commit_total, len(commit_counts))
