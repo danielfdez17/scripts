@@ -36,6 +36,13 @@ class CommitterCount:
     commit_count: int
 
 
+@dataclass
+class ContributorSummary:
+  committer_name: str
+  commit_total: int
+  repository_total: int
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Create an HTML visualization for a GitHub commit history SQLite database."
@@ -97,6 +104,28 @@ def load_committers(connection: sqlite3.Connection, repo_full_name: str, limit: 
     return [CommitterCount(committer_name=row[0], commit_count=row[1]) for row in rows]
 
 
+def load_contributors(connection: sqlite3.Connection, limit: int = 5) -> List[ContributorSummary]:
+    rows = connection.execute(
+        """
+        SELECT committer_name, SUM(commit_count) AS total_commits, COUNT(*) AS repository_total
+        FROM committer_counts
+        GROUP BY committer_key, committer_name
+        ORDER BY total_commits DESC, committer_name ASC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+
+    return [
+        ContributorSummary(
+            committer_name=row[0],
+            commit_total=row[1],
+            repository_total=row[2],
+        )
+        for row in rows
+    ]
+
+
 def load_schema(connection: sqlite3.Connection) -> None:
     tables = {
         row[0]
@@ -113,6 +142,48 @@ def load_schema(connection: sqlite3.Connection) -> None:
 def status_badge(status: str) -> str:
     label = html.escape(status.title())
     return f'<span class="status status-{html.escape(status)}">{label}</span>'
+
+
+def render_contributor_summary_card(connection: sqlite3.Connection) -> str:
+    contributors = load_contributors(connection, limit=999999)
+    total_contributors = connection.execute(
+        "SELECT COUNT(DISTINCT committer_key) FROM committer_counts"
+    ).fetchone()[0]
+
+    if not contributors:
+        contributor_items = '<li class="empty">No contributors were found in the database.</li>'
+    else:
+        contributor_items = "".join(
+            """
+            <li>
+              <strong>{name}</strong>
+              <span>{commits} commits across {repos} repositories</span>
+            </li>
+            """.format(
+                name=html.escape(contributor.committer_name),
+                commits=contributor.commit_total,
+                repos=contributor.repository_total,
+            )
+            for contributor in contributors
+        )
+
+    return f"""
+    <section class="summary-card">
+      <div class="summary-header">
+        <div>
+          <p class="eyebrow">Contributors</p>
+          <h2>Contributor Summary</h2>
+        </div>
+        <div class="summary-total">
+          <span class="label">Unique contributors</span>
+          <strong>{total_contributors}</strong>
+        </div>
+      </div>
+      <ul class="contributor-list">
+        {contributor_items}
+      </ul>
+    </section>
+    """
 
 
 def render_bar_chart(committers: List[CommitterCount]) -> str:
@@ -193,6 +264,7 @@ def render_html(
 
     total_commits = sum(repo.commit_total for repo in repositories)
     total_repositories = len(repositories)
+    contributor_summary_card = render_contributor_summary_card(connection)
 
     return f"""<!doctype html>
 <html lang="en">
@@ -244,6 +316,76 @@ def render_html(
       max-width: 64ch;
       line-height: 1.6;
       color: rgba(255, 255, 255, 0.88);
+    }}
+    .summary-card {{
+      margin: 18px 0 30px;
+      padding: 22px 24px;
+      background: linear-gradient(180deg, #ffffff 0%, #fffaf1 100%);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+    }}
+    .summary-header {{
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }}
+    .summary-header h2 {{
+      margin: 0;
+      font-size: 1.45rem;
+    }}
+    .eyebrow {{
+      margin: 0 0 6px;
+      color: var(--accent);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }}
+    .summary-total {{
+      min-width: 160px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(15, 118, 110, 0.12);
+      text-align: right;
+    }}
+    .summary-total .label {{
+      display: block;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }}
+    .summary-total strong {{
+      display: block;
+      margin-top: 6px;
+      font-size: 1.8rem;
+      color: var(--accent);
+    }}
+    .contributor-list {{
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }}
+    .contributor-list li {{
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: #faf7f0;
+      border: 1px solid var(--border);
+      display: grid;
+      gap: 4px;
+    }}
+    .contributor-list li strong {{
+      font-size: 1rem;
+    }}
+    .contributor-list li span {{
+      color: var(--muted);
+      font-size: 0.93rem;
+      line-height: 1.4;
     }}
     .overview {{
       display: grid;
@@ -354,6 +496,8 @@ def render_html(
       <h1>GitHub Commit History</h1>
       <p>This report visualizes the repository history stored in the SQLite database, with per-repository totals and a bar chart for the top committers.</p>
     </section>
+
+    {contributor_summary_card}
 
     <section class="overview" aria-label="summary">
       <div class="tile"><span class="label">Repositories</span><strong>{total_repositories}</strong></div>

@@ -1,54 +1,48 @@
 #!/usr/bin/env python3
 
-"""Collect GitHub commit history into SQLite.
+"""Collect commit history from local Git repositories into SQLite.
 
-The script accepts a list of repositories, fetches their commit history from the
-GitHub API, stores the raw commit rows, and keeps an aggregated count of commits
-per committer. Repository-level failures are isolated so one private or
-unreachable repository does not stop the rest of the run.
+The script accepts local repository paths either as positional arguments or
+through a text file, stores commit history in SQLite, keeps per-committer
+counts, and generates the HTML report after collection finishes.
 """
 
 import argparse
-import json
-import os
-import subprocess
 import sqlite3
+import subprocess
 import sys
 import webbrowser
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import DefaultDict, Optional, Tuple
-from urllib.error import HTTPError, URLError
-from urllib.parse import quote, urlparse
-from urllib.request import Request, urlopen
 
 
-API_VERSION = "2022-11-28"
 DEFAULT_DB_PATH = "github_commit_history.sqlite3"
 DEFAULT_REPORT_PATH = "github_commit_history_report.html"
-GITHUB_API_BASE = "https://api.github.com"
+GIT_LOG_FORMAT = "%H%x1f%cn%x1f%ce%x1f%cd%x1f%an%x1f%ae%x1f%ad%x1f%s"
+GIT_LOG_SEPARATOR = "\x1f"
 
 
-class GitHubRepositoryError(RuntimeError):
-    """Raised when a repository cannot be collected."""
+class GitRepositoryError(RuntimeError):
+    """Raised when a local repository cannot be collected."""
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Store GitHub commit history and per-committer counts in SQLite."
+        description="Store commit history from local Git repositories in SQLite."
     )
     parser.add_argument(
         "repos",
         nargs="*",
-        help=(
-            "Repository identifiers. Accepted formats: owner/repo, "
-            "https://github.com/owner/repo, or git@github.com:owner/repo.git"
-        ),
+        help="Local repository paths. You can also provide them through --repos-file.",
     )
     parser.add_argument(
         "--repos-file",
-        help="Path to a text file with one repository per line. Blank lines and lines starting with # are ignored.",
+        help=(
+            "Path to a text file with one local repository path per line. Blank lines "
+            "and lines starting with # are ignored."
+        ),
     )
     parser.add_argument(
         "--db",
@@ -60,122 +54,29 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_REPORT_PATH,
         help=f"Path to the HTML report to generate (default: {DEFAULT_REPORT_PATH}).",
     )
-    parser.add_argument(
-        "--token",
-        default=os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN"),
-        help="GitHub token for private repositories. Defaults to GITHUB_TOKEN or GH_TOKEN.",
-    )
     return parser.parse_args()
 
 
-def load_repositories_from_file(file_path: str):
-    repositories = []
+def load_repositories_from_file(file_path: str) -> list[str]:
     path = Path(file_path)
     if not path.exists():
         raise FileNotFoundError(f"Repositories file not found: {path}")
 
+    repositories = []
     for raw_line in path.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()
         if not line or line.startswith("#"):
             continue
         repositories.append(line)
-
     return repositories
 
 
-def normalize_repository(reference: str) -> Tuple[str, str]:
-    reference = reference.strip()
-
-    if reference.startswith("git@github.com:"):
-        reference = reference.removeprefix("git@github.com:")
-    else:
-        parsed = urlparse(reference)
-        if parsed.scheme and parsed.netloc:
-            if parsed.netloc not in {"github.com", "www.github.com"}:
-                raise GitHubRepositoryError(f"Unsupported host in repository reference: {reference}")
-            reference = parsed.path
-
-    reference = reference.strip("/")
-    if reference.endswith(".git"):
-        reference = reference[:-4]
-
-    parts = [part for part in reference.split("/") if part]
-    if len(parts) != 2:
-        raise GitHubRepositoryError(
-            f"Invalid repository reference '{reference}'. Expected owner/repo or a GitHub URL."
-        )
-
-    return parts[0], parts[1]
-
-
-def github_request(url: str, token: Optional[str]) -> str:
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": API_VERSION,
-        "User-Agent": "scripts-commit-history-collector",
-    }
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-
-    request = Request(url, headers=headers)
-    with urlopen(request, timeout=30) as response:
-        return response.read().decode("utf-8")
-
-
-def build_commits_url(owner: str, repo: str, page: int, per_page: int) -> str:
-    return (
-        f"{GITHUB_API_BASE}/repos/{quote(owner, safe='')}/{quote(repo, safe='')}"
-        f"/commits?per_page={per_page}&page={page}"
-    )
-
-
-def load_commit_page(owner: str, repo: str, token: Optional[str], page: int, per_page: int):
-    url = build_commits_url(owner, repo, page, per_page)
-
-    try:
-        payload = github_request(url, token)
-    except HTTPError as error:
-        if error.code == 409:
-            return []
-        if error.code in {403, 404}:
-            raise GitHubRepositoryError(
-                f"GitHub API returned {error.code} while reading {owner}/{repo}. "
-                "The repository may be private or unavailable."
-            ) from error
-        raise GitHubRepositoryError(
-            f"GitHub API error {error.code} while reading {owner}/{repo}"
-        ) from error
-    except URLError as error:
-        raise GitHubRepositoryError(f"Network error while reading {owner}/{repo}: {error.reason}") from error
-
-    try:
-        commits = json.loads(payload)
-    except ValueError as error:
-        raise GitHubRepositoryError(f"Invalid JSON received for {owner}/{repo}") from error
-
-    if not isinstance(commits, list):
-        raise GitHubRepositoryError(f"Unexpected API response while reading {owner}/{repo}")
-
-    return commits
-
-
-def fetch_commits(owner: str, repo: str, token: Optional[str]):
-    page = 1
-    per_page = 100
-
-    while True:
-        commits = load_commit_page(owner, repo, token, page, per_page)
-
-        if not commits:
-            return
-
-        for commit in commits:
-            yield commit
-
-        if len(commits) < per_page:
-            return
-
-        page += 1
+def collect_input_repositories(args: argparse.Namespace) -> list[str]:
+    if args.repos:
+        return list(args.repos)
+    if args.repos_file:
+        return load_repositories_from_file(args.repos_file)
+    raise ValueError("You must provide repositories with --repos-file or as positional arguments.")
 
 
 def ensure_schema(connection: sqlite3.Connection) -> None:
@@ -218,36 +119,6 @@ def ensure_schema(connection: sqlite3.Connection) -> None:
     )
 
 
-def extract_committer_info(commit: dict) -> Tuple[str, str, Optional[str], Optional[str], Optional[str], Optional[str]]:
-    top_committer = commit.get("committer") or {}
-    raw_commit = commit.get("commit") or {}
-    raw_committer = raw_commit.get("committer") or {}
-    raw_author = raw_commit.get("author") or {}
-
-    login = top_committer.get("login")
-    email = raw_committer.get("email") or raw_author.get("email")
-    name = top_committer.get("login") or raw_committer.get("name") or raw_author.get("name") or email or "unknown"
-
-    if login:
-        key = f"login:{login.lower()}"
-    elif email:
-        key = f"email:{email.lower()}"
-    elif name:
-        key = f"name:{name.lower()}"
-    else:
-        sha = commit.get("sha", "unknown")
-        key = f"sha:{sha}"
-
-    return (
-        key,
-        name,
-        raw_committer.get("name") or raw_author.get("name"),
-        email,
-        raw_committer.get("date"),
-        raw_author.get("date"),
-    )
-
-
 def record_repository_status(
     connection: sqlite3.Connection,
     full_name: str,
@@ -279,30 +150,105 @@ def record_repository_status(
     )
 
 
-def store_repository(connection: sqlite3.Connection, reference: str, token: Optional[str]) -> bool:
+def normalize_repository_path(reference: str) -> Path:
+    path = Path(reference).expanduser()
+    if not path.exists():
+        raise GitRepositoryError(f"Repository path does not exist: {reference}")
+    if not path.is_dir():
+        raise GitRepositoryError(f"Repository path is not a directory: {reference}")
+    return path.resolve()
+
+
+def run_git_command(repository_path: Path, args: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", "-C", str(repository_path), *args],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+
+def repository_display_name(repository_path: Path) -> str:
+    try:
+        remote = run_git_command(repository_path, ["remote", "get-url", "origin"]).stdout.strip()
+    except subprocess.CalledProcessError:
+        return repository_path.name
+
+    if remote.endswith(".git"):
+        remote = remote[:-4]
+
+    if remote.startswith("git@github.com:"):
+        remote = remote.removeprefix("git@github.com:")
+    elif remote.startswith(("https://github.com/", "http://github.com/")):
+        remote = remote.split("github.com/", 1)[-1]
+
+    parts = [part for part in remote.strip("/").split("/") if part]
+    if len(parts) >= 2:
+        return f"{parts[-2]}/{parts[-1]}"
+    return repository_path.name
+
+
+def parse_git_log_line(line: str) -> Tuple[str, str, str, str, str, str, str, str]:
+    fields = line.split(GIT_LOG_SEPARATOR, 7)
+    if len(fields) != 8:
+        raise GitRepositoryError("Unexpected git log output format")
+    return (
+        fields[0],
+        fields[1],
+        fields[2],
+        fields[3],
+        fields[4],
+        fields[5],
+        fields[6],
+        fields[7],
+    )
+
+
+def fetch_commits(repository_path: Path):
+    try:
+        result = run_git_command(
+            repository_path,
+            ["log", "--all", f"--pretty=format:{GIT_LOG_FORMAT}", "--date=iso-strict"],
+        )
+    except subprocess.CalledProcessError as error:
+        stderr = error.stderr.strip() if error.stderr else ""
+        message = stderr or f"Failed to read git history for {repository_path}"
+        raise GitRepositoryError(message) from error
+
+    for raw_line in result.stdout.splitlines():
+        if not raw_line.strip():
+            continue
+        yield parse_git_log_line(raw_line)
+
+
+def committer_key(name: str, email: str) -> str:
+    if email:
+        return f"email:{email.lower()}"
+    return f"name:{name.lower()}"
+
+
+def store_repository(connection: sqlite3.Connection, repository_reference: str) -> bool:
     commit_counts: DefaultDict[str, int] = defaultdict(int)
-    committer_names = {}
+    committer_names: dict[str, str] = {}
     commit_total = 0
 
     try:
-        owner, repo = normalize_repository(reference)
-        full_name = f"{owner}/{repo}"
+        repository_path = normalize_repository_path(repository_reference)
+        full_name = str(repository_path)
+        display_name = repository_display_name(repository_path)
 
-        print(f"Collecting {full_name}...")
+        print(f"Collecting {display_name} ({repository_path})...")
 
         with connection:
             record_repository_status(connection, full_name, "collecting", None, 0, 0)
             connection.execute("DELETE FROM commits WHERE repo_full_name = ?", (full_name,))
             connection.execute("DELETE FROM committer_counts WHERE repo_full_name = ?", (full_name,))
 
-            for commit in fetch_commits(owner, repo, token):
-                sha = commit.get("sha")
-                if not sha:
-                    continue
-
-                committer_key, committer_name, author_name, author_email, committed_at, authored_at = extract_committer_info(commit)
-                message = (commit.get("commit") or {}).get("message")
-                url = commit.get("html_url")
+            for sha, committer_name, committer_email, committed_at, author_name, author_email, authored_at, message in fetch_commits(repository_path):
+                key = committer_key(committer_name, committer_email)
+                commit_counts[key] += 1
+                committer_names[key] = committer_name
+                commit_total += 1
 
                 connection.execute(
                     """
@@ -314,43 +260,33 @@ def store_repository(connection: sqlite3.Connection, reference: str, token: Opti
                     (
                         full_name,
                         sha,
-                        committer_key,
+                        key,
                         committer_name,
-                        author_name,
-                        author_email,
+                        author_name or None,
+                        author_email or None,
                         committed_at,
                         authored_at,
                         message,
-                        url,
+                        sha,
                     ),
                 )
 
-                commit_counts[committer_key] += 1
-                committer_names[committer_key] = committer_name
-                commit_total += 1
-
-            for committer_key, count in commit_counts.items():
+            for key, count in commit_counts.items():
                 connection.execute(
                     """
                     INSERT OR REPLACE INTO committer_counts (
                         repo_full_name, committer_key, committer_name, commit_count
                     ) VALUES (?, ?, ?, ?)
                     """,
-                    (full_name, committer_key, committer_names[committer_key], count),
+                    (full_name, key, committer_names[key], count),
                 )
 
-            record_repository_status(
-                connection,
-                full_name,
-                "success",
-                None,
-                commit_total,
-                len(commit_counts),
-            )
-        print(f"Stored {commit_total} commits for {full_name}.")
+            record_repository_status(connection, full_name, "success", None, commit_total, len(commit_counts))
+
+        print(f"Stored {commit_total} commits for {display_name}.")
         return True
-    except (GitHubRepositoryError, sqlite3.Error, OSError, ValueError) as error:
-        full_name = reference.strip() or reference
+    except (GitRepositoryError, sqlite3.Error, OSError, ValueError) as error:
+        full_name = str(Path(repository_reference).expanduser())
         print(f"Failed to collect {full_name}: {error}")
         try:
             with connection:
@@ -360,18 +296,28 @@ def store_repository(connection: sqlite3.Connection, reference: str, token: Opti
         return False
 
 
+def generate_report(db_path: str, report_output: str) -> None:
+    report_script = Path(__file__).with_name("visualize_github_commit_history.py")
+    subprocess.run(
+        [
+            sys.executable,
+            str(report_script),
+            "--db",
+            db_path,
+            "--output",
+            report_output,
+        ],
+        check=True,
+    )
+    webbrowser.open(Path(report_output).resolve().as_uri())
+
+
 def main() -> int:
     args = parse_args()
-    if args.repos:
-        repositories = list(args.repos)
-    elif args.repos_file:
-        try:
-            repositories = load_repositories_from_file(args.repos_file)
-        except FileNotFoundError as error:
-            print(error)
-            return 1
-    else:
-        print("You must provide repositories with --repos-file or as positional arguments.")
+    try:
+        repositories = collect_input_repositories(args)
+    except (FileNotFoundError, ValueError) as error:
+        print(error)
         return 1
 
     if not repositories:
@@ -389,29 +335,16 @@ def main() -> int:
 
     try:
         ensure_schema(connection)
-        for reference in repositories:
-            if store_repository(connection, reference, args.token):
+        for repository in repositories:
+            if store_repository(connection, repository):
                 success_count += 1
             else:
                 failure_count += 1
     finally:
         connection.close()
 
-    report_script = Path(__file__).with_name("visualize_github_commit_history.py")
-    report_path = Path(args.report_output)
     try:
-        subprocess.run(
-            [
-                sys.executable,
-                str(report_script),
-                "--db",
-                args.db,
-                "--output",
-                args.report_output,
-            ],
-            check=True,
-        )
-        webbrowser.open(report_path.resolve().as_uri())
+        generate_report(args.db, args.report_output)
     except subprocess.CalledProcessError as error:
         print(f"Failed to generate the HTML report: {error}")
     except Exception as error:
