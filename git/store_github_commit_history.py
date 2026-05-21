@@ -11,10 +11,13 @@ unreachable repository does not stop the rest of the run.
 import argparse
 import json
 import os
+import subprocess
 import sqlite3
 import sys
+import webbrowser
 from collections import defaultdict
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import DefaultDict, Optional, Tuple
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlparse
@@ -23,6 +26,7 @@ from urllib.request import Request, urlopen
 
 API_VERSION = "2022-11-28"
 DEFAULT_DB_PATH = "github_commit_history.sqlite3"
+DEFAULT_REPORT_PATH = "github_commit_history_report.html"
 GITHUB_API_BASE = "https://api.github.com"
 
 
@@ -36,11 +40,15 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "repos",
-        nargs="+",
+        nargs="*",
         help=(
             "Repository identifiers. Accepted formats: owner/repo, "
             "https://github.com/owner/repo, or git@github.com:owner/repo.git"
         ),
+    )
+    parser.add_argument(
+        "--repos-file",
+        help="Path to a text file with one repository per line. Blank lines and lines starting with # are ignored.",
     )
     parser.add_argument(
         "--db",
@@ -48,11 +56,31 @@ def parse_args() -> argparse.Namespace:
         help=f"Path to the SQLite database file (default: {DEFAULT_DB_PATH}).",
     )
     parser.add_argument(
+        "--report-output",
+        default=DEFAULT_REPORT_PATH,
+        help=f"Path to the HTML report to generate (default: {DEFAULT_REPORT_PATH}).",
+    )
+    parser.add_argument(
         "--token",
         default=os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN"),
         help="GitHub token for private repositories. Defaults to GITHUB_TOKEN or GH_TOKEN.",
     )
     return parser.parse_args()
+
+
+def load_repositories_from_file(file_path: str):
+    repositories = []
+    path = Path(file_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Repositories file not found: {path}")
+
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        repositories.append(line)
+
+    return repositories
 
 
 def normalize_repository(reference: str) -> Tuple[str, str]:
@@ -334,7 +362,19 @@ def store_repository(connection: sqlite3.Connection, reference: str, token: Opti
 
 def main() -> int:
     args = parse_args()
-    if not args.repos:
+    if args.repos:
+        repositories = list(args.repos)
+    elif args.repos_file:
+        try:
+            repositories = load_repositories_from_file(args.repos_file)
+        except FileNotFoundError as error:
+            print(error)
+            return 1
+    else:
+        print("You must provide repositories with --repos-file or as positional arguments.")
+        return 1
+
+    if not repositories:
         print("You must provide at least one repository.")
         return 1
 
@@ -349,13 +389,33 @@ def main() -> int:
 
     try:
         ensure_schema(connection)
-        for reference in args.repos:
+        for reference in repositories:
             if store_repository(connection, reference, args.token):
                 success_count += 1
             else:
                 failure_count += 1
     finally:
         connection.close()
+
+    report_script = Path(__file__).with_name("visualize_github_commit_history.py")
+    report_path = Path(args.report_output)
+    try:
+        subprocess.run(
+            [
+                sys.executable,
+                str(report_script),
+                "--db",
+                args.db,
+                "--output",
+                args.report_output,
+            ],
+            check=True,
+        )
+        webbrowser.open(report_path.resolve().as_uri())
+    except subprocess.CalledProcessError as error:
+        print(f"Failed to generate the HTML report: {error}")
+    except Exception as error:
+        print(f"Failed to open the HTML report in a browser: {error}")
 
     print(
         f"Finished. Successful repositories: {success_count}. Failed repositories: {failure_count}."
