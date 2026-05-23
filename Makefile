@@ -115,8 +115,16 @@ push-to-origin: ## Push the current branch to 'origin'
 	@bash ./vendor/scripts/git/push_to_origin.sh
 	@$(call print_success,Current branch pushed to 'origin' successfully!)
 
+.PHONY: clone-transcendence-repositories
+clone-transcendence-repositories: ## Clone all Transcendence repositories listed in transcendence_local.txt
+	@$(call print_banner,Cloning Transcendence Repositories)
+	@bash ./42/transcendence/clone_transcendence_repos.sh
+	@$(call print_success,Transcendence repositories cloned successfully!)
+
 .PHONY: collect-git-commit-history
 collect-git-commit-history: ## Collect git commit history into a file
+	@$(MAKE) -s clone-transcendence-repositories
 	@$(call print_banner,Collecting Git Commit History)
-	@cd 42/transcendence; rm -rf commits.sqlite3; python3 store_github_commit_history.py --repos-file transcendence_local.txt --db commits.sqlite3
+	@bash ./42/transcendence/create_commit_history.sh
+# 	@cd 42/transcendence; rm -rf commits.sqlite3; python3 store_github_commit_history.py --repos-file transcendence_local.txt --db commits.sqlite3
 	@$(call print_success,Git commit history collected successfully!)
