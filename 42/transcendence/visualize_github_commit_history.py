@@ -37,11 +37,29 @@ class CommitterCount:
 
 
 @dataclass
-class ContributorSummary:
-    committer_name: str
-    committer_email: str
-    commit_total: int
-    repository_total: int
+class GroupSummary:
+  group_name: str
+  commit_total: int
+  repository_total: int
+  members: List[str]
+
+
+CONTRIBUTOR_GROUPS = {
+  "vjan-nie": ["Vado", "vjan-nie"],
+  "rstancu": ["settes"],
+  "serjimen": ["serjimen", "DJSurgeon"],
+  "dlesieur": ["LESdylan", "dlesieur"],
+  "danfern3": ["danielfdez17"],
+  "GitHub": ["GitHub"],
+  "AI Assistant": ["AI Assistant"],
+  "test": ["test"],
+}
+
+GROUP_BY_MEMBER = {
+  member.lower(): group
+  for group, members in CONTRIBUTOR_GROUPS.items()
+  for member in members
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -105,27 +123,42 @@ def load_committers(connection: sqlite3.Connection, repo_full_name: str, limit: 
     return [CommitterCount(committer_name=row[0], commit_count=row[1]) for row in rows]
 
 
-def load_contributors(connection: sqlite3.Connection, limit: int = 5) -> List[ContributorSummary]:
-    rows = connection.execute(
-        """
-        SELECT committer_name, committer_email, SUM(commit_count) AS total_commits, COUNT(*) AS repository_total
-        FROM committer_counts
-        GROUP BY committer_key, committer_name, committer_email
-        ORDER BY total_commits DESC, committer_name ASC
-        LIMIT ?
-        """,
-        (limit,),
-    ).fetchall()
+def load_contributor_rows(connection: sqlite3.Connection) -> List[tuple[str, str, str, int]]:
+  return connection.execute(
+    """
+    SELECT committer_name, committer_email, repo_full_name, commit_count
+    FROM committer_counts
+    ORDER BY committer_name ASC
+    """
+  ).fetchall()
 
-    return [
-        ContributorSummary(
-            committer_name=row[0],
-            committer_email=row[1],
-            commit_total=row[2],
-            repository_total=row[3],
-        )
-        for row in rows
-    ]
+
+def group_contributors(rows: List[tuple[str, str, str, int]]) -> List[GroupSummary]:
+  grouped: dict[str, dict[str, object]] = {}
+  for committer_name, _committer_email, repo_full_name, commit_count in rows:
+    group_name = GROUP_BY_MEMBER.get(committer_name.lower(), committer_name)
+    entry = grouped.setdefault(
+      group_name,
+      {
+        "commit_total": 0,
+        "repos": set(),
+        "members": set(),
+      },
+    )
+    entry["commit_total"] += commit_count
+    entry["repos"].add(repo_full_name)
+    entry["members"].add(committer_name)
+
+  summaries = [
+    GroupSummary(
+      group_name=group_name,
+      commit_total=entry["commit_total"],
+      repository_total=len(entry["repos"]),
+      members=sorted(entry["members"]),
+    )
+    for group_name, entry in grouped.items()
+  ]
+  return sorted(summaries, key=lambda item: (-item.commit_total, item.group_name.lower()))
 
 
 def load_schema(connection: sqlite3.Connection) -> None:
@@ -147,47 +180,46 @@ def status_badge(status: str) -> str:
 
 
 def render_contributor_summary_card(connection: sqlite3.Connection) -> str:
-    contributors = load_contributors(connection, limit=999999)
-    total_contributors = connection.execute(
-        "SELECT COUNT(DISTINCT committer_key) FROM committer_counts"
-    ).fetchone()[0]
+  rows = load_contributor_rows(connection)
+  groups = group_contributors(rows)
+  total_contributors = len(groups)
 
-    if not contributors:
+  if not groups:
         contributor_items = '<li class="empty">No contributors were found in the database.</li>'
-    else:
-        contributor_items = "".join(
-            """
-            <li>
-              <strong>{name}</strong>
-              {email_part}
-              <span>{commits} commits across {repos} repositories</span>
-            </li>
-            """.format(
-                name=html.escape(contributor.committer_name),
-                email_part=f'<span class="email">{html.escape(contributor.committer_email)}</span>' if contributor.committer_email else '',
-                commits=contributor.commit_total,
-                repos=contributor.repository_total,
-            )
-            for contributor in contributors
-        )
+  else:
+      contributor_items = "".join(
+          """
+          <li>
+      <strong>{name}</strong>
+      <span class="members">{members}</span>
+      <span>{commits} commits across {repos} repositories</span>
+          </li>
+          """.format(
+      name=html.escape(group.group_name),
+      members=html.escape(", ".join(group.members)) if group.members else "",
+      commits=group.commit_total,
+      repos=group.repository_total,
+          )
+    for group in groups
+      )
 
-    return f"""
-    <section class="summary-card">
-      <div class="summary-header">
-        <div>
-          <p class="eyebrow">Contributors</p>
-          <h2>Contributor Summary</h2>
-        </div>
-        <div class="summary-total">
-          <span class="label">Unique contributors</span>
-          <strong>{total_contributors}</strong>
-        </div>
+  return f"""
+  <section class="summary-card">
+    <div class="summary-header">
+      <div>
+        <p class="eyebrow">Contributors</p>
+        <h2>Contributor Summary</h2>
       </div>
-      <ul class="contributor-list">
-        {contributor_items}
-      </ul>
-    </section>
-    """
+      <div class="summary-total">
+        <span class="label">Unique contributors</span>
+        <strong>{total_contributors}</strong>
+      </div>
+    </div>
+    <ul class="contributor-list">
+      {contributor_items}
+    </ul>
+  </section>
+  """
 
 
 def render_bar_chart(committers: List[CommitterCount]) -> str:
@@ -391,17 +423,11 @@ def render_html(
       font-size: 0.93rem;
       line-height: 1.4;
     }}
-    .contributor-list li .email {{
+    .contributor-list li .members {{
       display: block;
       font-size: 0.88rem;
       margin: 2px 0;
-    }}
-    .contributor-list li .email a {{
       color: var(--accent);
-      text-decoration: none;
-    }}
-    .contributor-list li .email a:hover {{
-      text-decoration: underline;
     }}
     .overview {{
       display: grid;
