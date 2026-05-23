@@ -1,7 +1,7 @@
 #!/bin/bash
 
 mkdir -p ~/projects/transcendence
-cd ~/projects/transcendence
+cd ~/projects/transcendence || exit 0
 
 git clone git@github.com:Univers42/ft_transcendence || true;
 git clone git@github.com:Univers42/osionos || true;

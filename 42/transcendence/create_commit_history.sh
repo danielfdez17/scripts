@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd 42/transcendence
+cd 42/transcendence || exit 0
 
 rm -rf commits.sqlite3
 

@@ -13,6 +13,7 @@ import subprocess
 import sys
 import webbrowser
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import DefaultDict, Optional, Tuple
@@ -24,11 +25,38 @@ GIT_LOG_FORMAT = "%H%x1f%cn%x1f%ce%x1f%cd%x1f%an%x1f%ae%x1f%ad%x1f%s"
 GIT_LOG_SEPARATOR = "\x1f"
 
 
+# pylint: disable=duplicate-code
+
+
 class GitRepositoryError(RuntimeError):
     """Raised when a local repository cannot be collected."""
 
 
+@dataclass(frozen=True)
+class RepositoryStatus:
+    """Status values stored for a repository collection run."""
+
+    full_name: str
+    status: str
+    error_message: Optional[str]
+    commit_total: int
+    committer_total: int
+
+
+@dataclass
+class CommitSummary:
+    """Aggregated commit data for a repository collection."""
+
+    commit_counts: DefaultDict[str, int]
+    committer_names: dict[str, str]
+    committer_emails: dict[str, str]
+    commit_total: int
+
+
 def parse_args() -> argparse.Namespace:
+    """
+    Parse command-line arguments for the script.
+    """
     parser = argparse.ArgumentParser(
         description="Store commit history from local Git repositories in SQLite."
     )
@@ -58,6 +86,9 @@ def parse_args() -> argparse.Namespace:
 
 
 def load_repositories_from_file(file_path: str) -> list[str]:
+    """
+    Load repository paths from a text file. Ignores blank lines and comments.
+    """
     path = Path(file_path)
     if not path.exists():
         raise FileNotFoundError(f"Repositories file not found: {path}")
@@ -72,6 +103,10 @@ def load_repositories_from_file(file_path: str) -> list[str]:
 
 
 def collect_input_repositories(args: argparse.Namespace) -> list[str]:
+    """
+    Collect the list of repository paths from command-line arguments or a file.
+    Raises ValueError if no repositories are provided.
+    """
     if args.repos:
         return list(args.repos)
     if args.repos_file:
@@ -80,6 +115,9 @@ def collect_input_repositories(args: argparse.Namespace) -> list[str]:
 
 
 def ensure_schema(connection: sqlite3.Connection) -> None:
+    """
+    Ensure the database schema exists. Creates tables if they do not exist.
+    """
     connection.execute("PRAGMA foreign_keys = ON")
     connection.executescript(
         """
@@ -122,12 +160,11 @@ def ensure_schema(connection: sqlite3.Connection) -> None:
 
 def record_repository_status(
     connection: sqlite3.Connection,
-    full_name: str,
-    status: str,
-    error_message: Optional[str],
-    commit_total: int,
-    committer_total: int,
+    repo_status: RepositoryStatus,
 ) -> None:
+    """
+    Record the status of a repository in the database.
+    """
     connection.execute(
         """
         INSERT INTO repositories (
@@ -141,17 +178,94 @@ def record_repository_status(
             committer_total=excluded.committer_total
         """,
         (
-            full_name,
+            repo_status.full_name,
             datetime.now(timezone.utc).isoformat(),
-            status,
-            error_message,
-            commit_total,
-            committer_total,
+            repo_status.status,
+            repo_status.error_message,
+            repo_status.commit_total,
+            repo_status.committer_total,
         ),
     )
 
 
+def insert_commits(
+    connection: sqlite3.Connection,
+    full_name: str,
+    repository_path: Path,
+) -> CommitSummary:
+    """
+    Insert commit rows for a repository and return aggregated committer data.
+    """
+    commit_counts: DefaultDict[str, int] = defaultdict(int)
+    committer_names: dict[str, str] = {}
+    committer_emails: dict[str, str] = {}
+    commit_total = 0
+
+    for fields in fetch_commits(repository_path):
+        key = committer_key(fields[1], fields[2])
+        commit_counts[key] += 1
+        committer_names[key] = fields[1]
+        committer_emails[key] = fields[2] or ""
+        commit_total += 1
+
+        connection.execute(
+            """
+            INSERT OR REPLACE INTO commits (
+                repo_full_name, sha, committer_key, committer_name,
+                author_name, author_email, committed_at, authored_at, message, url
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                full_name,
+                fields[0],
+                key,
+                fields[1],
+                fields[4] or None,
+                fields[5] or None,
+                fields[3],
+                fields[6],
+                fields[7],
+                fields[0],
+            ),
+        )
+
+    return CommitSummary(
+        commit_counts=commit_counts,
+        committer_names=committer_names,
+        committer_emails=committer_emails,
+        commit_total=commit_total,
+    )
+
+
+def insert_committer_counts(
+    connection: sqlite3.Connection,
+    full_name: str,
+    summary: CommitSummary,
+) -> None:
+    """
+    Insert aggregated committer counts for a repository.
+    """
+    for key, count in summary.commit_counts.items():
+        connection.execute(
+            """
+            INSERT OR REPLACE INTO committer_counts (
+                repo_full_name, committer_key, committer_name, committer_email, commit_count
+            ) VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                full_name,
+                key,
+                summary.committer_names[key],
+                summary.committer_emails[key],
+                count,
+            ),
+        )
+
+
 def normalize_repository_path(reference: str) -> Path:
+    """
+    Validate and normalize the repository path. Raises GitRepositoryError if the path is invalid.
+    """
     path = Path(reference).expanduser()
     if not path.exists():
         raise GitRepositoryError(f"Repository path does not exist: {reference}")
@@ -161,6 +275,10 @@ def normalize_repository_path(reference: str) -> Path:
 
 
 def run_git_command(repository_path: Path, args: list[str]) -> subprocess.CompletedProcess[str]:
+    """
+    Run a git command in the specified repository and return the completed process.
+    Raises CalledProcessError on failure.
+    """
     return subprocess.run(
         ["git", "-C", str(repository_path), *args],
         capture_output=True,
@@ -170,6 +288,9 @@ def run_git_command(repository_path: Path, args: list[str]) -> subprocess.Comple
 
 
 def repository_display_name(repository_path: Path) -> str:
+    """
+    Generate a user-friendly display name for the repository based on its remote URL or path.
+    """
     try:
         remote = run_git_command(repository_path, ["remote", "get-url", "origin"]).stdout.strip()
     except subprocess.CalledProcessError:
@@ -190,6 +311,9 @@ def repository_display_name(repository_path: Path) -> str:
 
 
 def parse_git_log_line(line: str) -> Tuple[str, str, str, str, str, str, str, str]:
+    """
+    Parse a single line from the git log output into its component parts.
+    """
     fields = line.split(GIT_LOG_SEPARATOR, 7)
     if len(fields) != 8:
         raise GitRepositoryError("Unexpected git log output format")
@@ -206,6 +330,9 @@ def parse_git_log_line(line: str) -> Tuple[str, str, str, str, str, str, str, st
 
 
 def fetch_commits(repository_path: Path):
+    """
+    Fetch commit history from the repository using git log and yield parsed commit data.
+    """
     try:
         result = run_git_command(
             repository_path,
@@ -223,17 +350,19 @@ def fetch_commits(repository_path: Path):
 
 
 def committer_key(name: str, email: str) -> str:
+    """
+    Generate a unique key for a committer based on their email or name.
+    """
     if email:
         return f"email:{email.lower()}"
     return f"name:{name.lower()}"
 
 
 def store_repository(connection: sqlite3.Connection, repository_reference: str) -> bool:
-    commit_counts: DefaultDict[str, int] = defaultdict(int)
-    committer_names: dict[str, str] = {}
-    committer_emails: dict[str, str] = {}
-    commit_total = 0
-
+    """
+    Collect commit history for a single repository and store it in the database.
+    Returns True on success, False on failure.
+    """
     try:
         repository_path = normalize_repository_path(repository_reference)
         full_name = str(repository_path)
@@ -242,64 +371,49 @@ def store_repository(connection: sqlite3.Connection, repository_reference: str) 
         print(f"Collecting {display_name} ({repository_path})...")
 
         with connection:
-            record_repository_status(connection, full_name, "collecting", None, 0, 0)
+            record_repository_status(
+                connection,
+                RepositoryStatus(full_name, "collecting", None, 0, 0),
+            )
             connection.execute("DELETE FROM commits WHERE repo_full_name = ?", (full_name,))
-            connection.execute("DELETE FROM committer_counts WHERE repo_full_name = ?", (full_name,))
+            connection.execute(
+                "DELETE FROM committer_counts WHERE repo_full_name = ?",
+                (full_name,),
+            )
 
-            for sha, committer_name, committer_email, committed_at, author_name, author_email, authored_at, message in fetch_commits(repository_path):
-                key = committer_key(committer_name, committer_email)
-                commit_counts[key] += 1
-                committer_names[key] = committer_name
-                committer_emails[key] = committer_email or ""
-                commit_total += 1
+            summary = insert_commits(connection, full_name, repository_path)
+            insert_committer_counts(connection, full_name, summary)
+            record_repository_status(
+                connection,
+                RepositoryStatus(
+                    full_name,
+                    "success",
+                    None,
+                    summary.commit_total,
+                    len(summary.commit_counts),
+                ),
+            )
 
-                connection.execute(
-                    """
-                    INSERT OR REPLACE INTO commits (
-                        repo_full_name, sha, committer_key, committer_name,
-                        author_name, author_email, committed_at, authored_at, message, url
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        full_name,
-                        sha,
-                        key,
-                        committer_name,
-                        author_name or None,
-                        author_email or None,
-                        committed_at,
-                        authored_at,
-                        message,
-                        sha,
-                    ),
-                )
-
-            for key, count in commit_counts.items():
-                connection.execute(
-                    """
-                    INSERT OR REPLACE INTO committer_counts (
-                        repo_full_name, committer_key, committer_name, committer_email, commit_count
-                    ) VALUES (?, ?, ?, ?, ?)
-                    """,
-                    (full_name, key, committer_names[key], committer_emails[key], count),
-                )
-
-            record_repository_status(connection, full_name, "success", None, commit_total, len(commit_counts))
-
-        print(f"Stored {commit_total} commits for {display_name}.")
+        print(f"Stored {summary.commit_total} commits for {display_name}.")
         return True
     except (GitRepositoryError, sqlite3.Error, OSError, ValueError) as error:
         full_name = str(Path(repository_reference).expanduser())
         print(f"Failed to collect {full_name}: {error}")
         try:
             with connection:
-                record_repository_status(connection, full_name, "error", str(error), 0, 0)
+                record_repository_status(
+                    connection,
+                    RepositoryStatus(full_name, "error", str(error), 0, 0),
+                )
         except sqlite3.Error as status_error:
             print(f"Failed to record status for {full_name}: {status_error}")
         return False
 
 
 def generate_report(db_path: str, report_output: str) -> None:
+    """
+    Generate the HTML report by running the visualization script and open it in a browser.
+    """
     report_script = Path(__file__).with_name("visualize_github_commit_history.py")
     subprocess.run(
         [
@@ -316,6 +430,10 @@ def generate_report(db_path: str, report_output: str) -> None:
 
 
 def main() -> int:
+    """
+    Main entry point for the script. Parses arguments, collects repositories,
+    stores commit history, and generates the report. Returns 0 on success, or 1 on failure.
+    """
     args = parse_args()
     try:
         repositories = collect_input_repositories(args)
@@ -350,7 +468,7 @@ def main() -> int:
         generate_report(args.db, args.report_output)
     except subprocess.CalledProcessError as error:
         print(f"Failed to generate the HTML report: {error}")
-    except Exception as error:
+    except (OSError, webbrowser.Error) as error:
         print(f"Failed to open the HTML report in a browser: {error}")
 
     print(
