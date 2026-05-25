@@ -1,0 +1,77 @@
+format = '''
+[╭➜](bold green) $os$battery
+[│](bold green) $time(bold yellow)
+[│](bold green) $directory$git_branch$git_status$c$cpp$python$nodejs$docker_context
+[│](bold green) $status$memory_usage$jobs$cmd_duration
+[╰➜](bold green) '''
+
+[time]
+disabled = false
+format = '[$time ](bold yellow)'
+
+[git_branch]
+format = ' [$symbol$branch(:$remote_branch)]($style) '
+
+[fill]
+symbol = ' '
+
+[status]
+disabled = false
+#symbol = ''
+symbol = "[x](bold red) "
+not_executable_symbol = "noexec"
+not_found_symbol = "notfound"
+sigint_symbol = "sigint"
+signal_symbol = "sig"
+
+[character]
+success_symbol = '[➜](bold green)'
+error_symbol = '[✗](bold red) '
+
+[memory_usage]
+disabled = false
+threshold = -1
+symbol = 'memory'
+style = 'bold dimed green'
+format = '$symbol [${ram_pct}]($style) '
+
+[cmd_duration]
+min_time = 500
+format = '[| $duration](bold yellow)'
+
+[jobs]
+symbol = '*'
+number_threshold = 4
+symbol_threshold = 0
+
+[os]
+format = "[($name )]($style)"
+style = "bold blue"
+disabled = false
+
+[battery]
+full_symbol = '🔋 '
+charging_symbol = '⚡️ '
+discharging_symbol = '💀 '
+
+[nodejs]
+symbol = "nodejs"
+
+[docker_context]
+symbol = "docker"
+
+[c]
+symbol = "C "
+
+[cpp]
+symbol = "C++ "
+
+[package]
+symbol = "pkg "
+
+[python]
+symbol = "py "
+
+[typst]
+symbol = "typst "
+
