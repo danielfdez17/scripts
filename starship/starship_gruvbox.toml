@@ -101,5 +101,5 @@ disabled = false
 
 [character]
 disabled = false
-success_symbol = '[➜](bold fg:color_green)'
+success_symbol = '[➜](bold green)'
 error_symbol = '[✗](bold fg:color_red)'
