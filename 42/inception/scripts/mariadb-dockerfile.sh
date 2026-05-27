@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 cat << EOF
 FROM alpine:3.19

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 # ! This script is used to test the functionality of the project.
 # ! It runs a series of tests and outputs the results.

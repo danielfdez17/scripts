@@ -76,14 +76,8 @@ help: ## Show available targets
 .PHONY: update-submodules
 update-submodules: ## Update git submodules
 	@$(call print_banner,Updating Git Submodules)
-	@git submodule update --init --recursive --remote
+	@./update_submodules.sh
 	@$(call print_success,Git submodules updated successfully!)
-
-.PHONY: delete-remote-branches
-delete-remote-branches: ## Delete remote branches passed as arguments, e.g., `make delete-remote-branches branch1`
-	@$(call print_banner,Deleting Remote Branches)
-	@bash ./vendor/scripts/git/delete_remote_branches.sh $$@
-	@$(call print_success,Remote branches deleted successfully!)
 
 .PHONY: clone-scripts-submodule
 clone-scripts-submodule: ## Clone the scripts submodule
@@ -94,37 +88,55 @@ clone-scripts-submodule: ## Clone the scripts submodule
 .PHONY: remove-scripts-submodule
 remove-scripts-submodule: ## Remove the scripts submodule
 	@$(call print_banner,Removing Scripts Submodule)
-	@bash ./vendor/scripts/git/remove_submodule.sh vendor/scripts
+	@./remove_submodule.sh vendor/scripts
 	@$(call print_success,Scripts submodule removed successfully!)
 
 .PHONY: merge-to-dev
 merge-to-dev: ## Merge the current branch into 'develop'
 	@$(call print_banner,Merging Current Branch into 'dev')
-	@bash ./vendor/scripts/git/merge_to_dev.sh
+	@./merge_to_dev.sh
 	@$(call print_success,Current branch merged into 'dev' successfully!)
 
 .PHONY: merge-dev-to-main
 merge-dev-to-main: ## Merge 'develop' into 'main'
 	@$(call print_banner,Merging 'develop' into 'main')
-	@bash ./vendor/scripts/git/merge_dev_to_main.sh
+	@./merge_dev_to_main.sh
 	@$(call print_success,'develop' merged into 'main' successfully!)
 
 .PHONY: push-to-origin
 push-to-origin: ## Push the current branch to 'origin'
 	@$(call print_banner,Pushing Current Branch to 'origin')
-	@bash ./vendor/scripts/git/push_to_origin.sh
+	@./push_to_origin.sh
 	@$(call print_success,Current branch pushed to 'origin' successfully!)
 
 .PHONY: clone-transcendence-repositories
 clone-transcendence-repositories: ## Clone all Transcendence repositories listed in transcendence_local.txt
 	@$(call print_banner,Cloning Transcendence Repositories)
-	@bash ./42/transcendence/clone_transcendence_repos.sh
+	@./42/transcendence/clone_transcendence_repos.sh
 	@$(call print_success,Transcendence repositories cloned successfully!)
 
 .PHONY: collect-git-commit-history
 collect-git-commit-history: ## Collect git commit history into a file
 	@$(MAKE) -s clone-transcendence-repositories
 	@$(call print_banner,Collecting Git Commit History)
-	@bash ./42/transcendence/create_commit_history.sh
-# 	@cd 42/transcendence; rm -rf commits.sqlite3; python3 store_github_commit_history.py --repos-file transcendence_local.txt --db commits.sqlite3
+	@./42/transcendence/create_commit_history.sh
 	@$(call print_success,Git commit history collected successfully!)
+
+.PHONY: lint-bash-scripts
+lint-bash-scripts: ## Lint all bash scripts in the repository
+	@$(call print_banner,Linting Bash Scripts)
+	@./lint_bash_scripts.sh
+	@$(call print_success,Bash scripts linted successfully!)
+
+.PHONY: lint-python-scripts
+lint-python-scripts: ## Lint all Python scripts in the repository
+	@$(call print_banner,Linting Python Scripts)
+	@./lint_python_scripts.py
+	@$(call print_success,Python scripts linted successfully!)
+
+.PHONY: lint
+lint: ## Lint all bash and Python scripts
+	@$(call print_banner,Linting All Scripts)
+	@$(MAKE) -s lint-bash-scripts
+	@$(MAKE) -s lint-python-scripts
+	@$(call print_success,All scripts linted successfully!)

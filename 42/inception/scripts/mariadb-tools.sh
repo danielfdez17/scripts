@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 
 cat << EOF
-#!/bin/bash
+#!/usr/bin/bash
 
 set -e
 

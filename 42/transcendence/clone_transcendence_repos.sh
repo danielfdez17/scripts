@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 mkdir -p ~/projects/transcendence
 cd ~/projects/transcendence || exit 0

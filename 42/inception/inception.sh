@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 main_warning_msg="This script should receive the name of the 42 student"
 print_error "$main_warning_msg" || echo "$main_warning_msg"
@@ -43,7 +43,7 @@ wordpress=$requirements"/wordpress"
 # print_todo "Uncomment this lines!" || echo "Uncomment this lines!"
 # sudo mkdir -p /home/danfern3/data/web
 # sudo mkdir -p /home/danfern3/data/mariadb
-# print_ok "Volumes folders created successfully!" || echo "Volumes folders created successfully!"
+# print_success "Volumes folders created successfully!" || echo "Volumes folders created successfully!"
 # print_todo "Uncomment this lines!" || echo "Uncomment this lines!"
 
 
@@ -82,7 +82,7 @@ sh scripts/nginx-conf.sh > "$nginx/conf/nginx.conf"
 sh scripts/nginx-tools.sh > "$nginx/tools/setup.sh"
 
 folder_structure_msg="Inception folder structure and files created successfully!"
-print_ok "$folder_structure_msg" || echo "$folder_structure_msg"
+print_success "$folder_structure_msg" || echo "$folder_structure_msg"
 
 sh scripts/env.sh $inception_folder
 

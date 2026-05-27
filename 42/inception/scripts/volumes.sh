@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 if [ ! -d ~/data/wordpress ]; then
   mkdir -p ~/data/wordpress

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 if [ -z "$1" ]; then
 	print_error "Please provide the folder name as an argument."
@@ -30,4 +30,4 @@ echo "# Domain name" > "$srcs/.env"
 	echo "WORDPRESS_TITLE=inception"
 } >> "$srcs/.env"
 
-print_ok ".env"
+print_success ".env"
