@@ -13,4 +13,4 @@ if [ -z "$files" ]; then
   exit 1
 fi
 
-print_ok " .env file found."
+print_success " .env file found."
