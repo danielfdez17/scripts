@@ -20,6 +20,7 @@ alias gpr='git pull --rebase'
 alias grv='git remote -v'
 alias gss='git status -s'
 alias gw='git worktree'
+alias gf='git fetch'
 ```
 ---
 
