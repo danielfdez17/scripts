@@ -21,6 +21,8 @@ alias grv='git remote -v'
 alias gss='git status -s'
 alias gw='git worktree'
 alias gf='git fetch'
+alias gs='git switch'
+alias gd='git diff'
 ```
 ---
 
