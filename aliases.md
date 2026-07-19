@@ -23,6 +23,8 @@ alias gw='git worktree'
 alias gf='git fetch'
 alias gs='git switch'
 alias gd='git diff'
+alias gsm='git switch main'
+alias gsd='git switch develop'
 ```
 ---
 
