@@ -69,7 +69,7 @@ help: ## Show available targets
 	@$(call print_banner,Available Makefile Targets)
 	@echo ""
 	@grep -hE '^[a-zA-Z_-]+:.*## .*$$' Makefile | \
-		awk 'BEGIN {FS = ":.*## "}; {printf "  $(CYAN)%-25s$(RESET) %s\n", $$1, $$2}'
+		awk 'BEGIN {FS = ":.*## "}; {printf "  $(CYAN)%-35s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 
 # ── Utils ────────────────────────────────────────────────────────────────
