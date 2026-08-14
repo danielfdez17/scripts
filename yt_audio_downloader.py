@@ -4,6 +4,7 @@
 """
 This script is designed to download audio from YouTube videos using the pytubefix library.
 It reads one URL per line from a file and pauses between downloads.
+Audio is saved under music/<author>/, creating the author folder as needed.
 Failed downloads are re-queued until they succeed; completed URLs are removed from the input file.
 """
 
@@ -17,6 +18,8 @@ from pytubefix.cli import on_progress
 
 MAX_ATTEMPTS_PER_RUN = 3
 SLEEP_SECONDS = 3
+MUSIC_DIR = Path(__file__).resolve().parent / "music"
+INVALID_FOLDER_CHARS = '<>:"/\\|?*'
 
 
 def read_urls(file_path: Path) -> list[str]:
@@ -35,12 +38,28 @@ def remove_url_from_file(file_path: Path, url: str) -> None:
 	file_path.write_text("".join(remaining), encoding="utf-8")
 
 
+def sanitize_folder_name(name: str) -> str:
+	sanitized = "".join(
+		"_" if char in INVALID_FOLDER_CHARS else char for char in name
+	).strip(" .")
+	return sanitized or "Unknown"
+
+
+def author_folder(author: str) -> Path:
+	folder = MUSIC_DIR / sanitize_folder_name(author)
+	folder.mkdir(parents=True, exist_ok=True)
+	return folder
+
+
 def download_audio(url: str) -> None:
 	yt = YouTube(url, on_progress_callback=on_progress)
-	print(yt.title)
+	author = yt.author.strip() if yt.author else "Unknown"
+	print(f"{author} - {yt.title}")
 
+	output_dir = author_folder(author)
 	audio_stream = yt.streams.get_audio_only()
-	audio_stream.download()
+	audio_stream.download(output_path=str(output_dir))
+	print("\n")
 
 
 def print_summary(total: int, downloaded: int, failed_urls: list[str]) -> None:
