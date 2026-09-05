@@ -2,6 +2,7 @@
 
 ## General purpose
 ```bash
+alias ealias='cd; vim .bash_aliases; source .bash_aliases; cd -'
 alias ..='cd ..'
 alias ...='cd ../..'
 ```
