@@ -20,7 +20,7 @@ from typing import Callable, List, Optional
 
 
 DEFAULT_DB_PATH = "github_commit_history.sqlite3"
-DEFAULT_OUTPUT_PATH = "github_commit_history_report.html"
+DEFAULT_OUTPUT_PATH = "report.html"
 
 
 @dataclass
