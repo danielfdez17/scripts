@@ -29,7 +29,7 @@ while read -r script; do
     success_linting_msg="No issues found in $script."
     print_success "$success_linting_msg" || echo "$success_linting_msg"
     successful_lints=$((successful_lints + 1))
-done < <(find . -type f -name "*.sh" -not -path "./node_modules/*" -not -path "./dist/*" -not -path "./build/*")
+done < <(find "$(cd "$(dirname "$0")/.." && pwd)" -type f -name "*.sh" -not -path "*/node_modules/*" -not -path "*/dist/*" -not -path "*/build/*")
 
 summary_msg="Linting complete: $successful_lints successful, $failed_lints failed, out of $total_scripts scripts."
 if [ "$failed_lints" -eq 0 ]; then

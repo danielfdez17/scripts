@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 """
-This script is designed to lint all Python scripts in the current directory and
- its subdirectories using pylint.
+This script is designed to lint all Python scripts in the repository using pylint.
 """
 
 GREEN = "\033[0;32m"
@@ -15,8 +14,9 @@ if __name__ == "__main__":
     import subprocess
 
     summary = {"successful": 0, "failed": 0}
+    repo_root = Path(__file__).resolve().parent.parent
 
-    for path in Path('.').rglob('*.py'):
+    for path in repo_root.rglob('*.py'):
         print(path.name)
         try:
             print(f"{INFO}Linting {path}...")
