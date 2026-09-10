@@ -2,7 +2,7 @@
 set nocompatible
 
 " Show number lines
-set number
+"set number
 
 " Show syntax highlighting
 syntax on
@@ -15,7 +15,7 @@ filetype plugin on
 filetype indent on
 
 " Cursor highlighting
-set cursorline
+"set cursorline
 " set cursorcolumn
 
 " Search highlighting
