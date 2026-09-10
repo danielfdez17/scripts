@@ -576,7 +576,7 @@ def generate_report(db_path: str, report_output: str) -> None:
     """
     Generate the HTML report by running the visualization script and open it in a browser.
     """
-    report_script = Path(__file__).with_name("visualize_github_commit_history.py")
+    report_script = Path(__file__).with_name("github_commit_history_visualizer.py")
     subprocess.run(
         [
             sys.executable,
