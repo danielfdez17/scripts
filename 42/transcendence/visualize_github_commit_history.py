@@ -2,8 +2,8 @@
 
 """Render an HTML report for the GitHub commit history database.
 
-The report summarizes each repository and embeds an SVG circular chart for the
-committers stored in the SQLite database created by
+The report summarizes each repository and embeds SVG circular charts for the
+committers and languages stored in the SQLite database created by
 store_github_commit_history.py.
 """
 
@@ -16,7 +16,7 @@ import sqlite3
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 
 DEFAULT_DB_PATH = "github_commit_history.sqlite3"
@@ -45,6 +45,78 @@ class CommitterCount:
 
     committer_name: str
     commit_count: int
+
+
+@dataclass
+class LanguageCount:
+    """
+    Aggregated language usage for a repository, measured in bytes and file count.
+    """
+
+    language_name: str
+    byte_count: int
+    file_count: int
+
+
+@dataclass
+class ChartSlice:
+    """
+    A single slice in a circular chart.
+    """
+
+    label: str
+    value: int
+    detail: str = ""
+    color: Optional[str] = None
+
+
+LANGUAGE_COLORS = {
+    "Assembly": "#6E4C13",
+    "C": "#555555",
+    "C++": "#f34b7d",
+    "C#": "#178600",
+    "CMake": "#DA3434",
+    "CSS": "#563d7c",
+    "Dart": "#00B4AB",
+    "Dockerfile": "#384d54",
+    "Elixir": "#6e4a7e",
+    "Go": "#00ADD8",
+    "GraphQL": "#e10098",
+    "HCL": "#844FBA",
+    "HTML": "#e34c26",
+    "Handlebars": "#f7931e",
+    "Haskell": "#5e5086",
+    "JSON": "#292929",
+    "Java": "#b07219",
+    "JavaScript": "#f1e05a",
+    "Jupyter Notebook": "#DA5B0B",
+    "Kotlin": "#A97BFF",
+    "Less": "#1d365d",
+    "Lua": "#000080",
+    "Makefile": "#427819",
+    "Markdown": "#083fa1",
+    "PHP": "#4F5D95",
+    "Perl": "#0298c3",
+    "Prisma": "#0c344b",
+    "Protocol Buffer": "#e4e4e4",
+    "Python": "#3572A5",
+    "R": "#198CE7",
+    "Ruby": "#701516",
+    "Rust": "#dea584",
+    "SCSS": "#c6538c",
+    "SQL": "#e38c00",
+    "Sass": "#a53b70",
+    "Scala": "#c22d40",
+    "Shell": "#89e051",
+    "Solidity": "#AA6746",
+    "Svelte": "#ff3e00",
+    "Swift": "#F05138",
+    "TOML": "#9c4221",
+    "TypeScript": "#3178c6",
+    "Vue": "#41b883",
+    "XML": "#0060ac",
+    "YAML": "#cb171e",
+}
 
 
 @dataclass
@@ -174,6 +246,45 @@ def load_committers(
     ).fetchall()
 
     return aggregate_committers(rows)
+
+
+def table_exists(connection: sqlite3.Connection, table_name: str) -> bool:
+    """
+    Return True if the named table exists in the SQLite database.
+    """
+    row = connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+        (table_name,),
+    ).fetchone()
+    return row is not None
+
+
+def load_languages(
+    connection: sqlite3.Connection,
+    repo_full_name: str,
+) -> List[LanguageCount]:
+    """
+    Load language usage for a repository, ordered by byte count descending.
+    Returns an empty list when language data has not been collected yet.
+    """
+    if not table_exists(connection, "language_counts"):
+        return []
+
+    rows = connection.execute(
+        """
+        SELECT language_name, byte_count, file_count
+        FROM language_counts
+        WHERE repo_full_name = ?
+        ORDER BY byte_count DESC, language_name ASC
+        """,
+        (repo_full_name,),
+    ).fetchall()
+
+    return [
+        LanguageCount(language_name=row[0], byte_count=row[1], file_count=row[2])
+        for row in rows
+        if row[1] > 0
+    ]
 
 
 def load_contributor_rows(
@@ -346,43 +457,68 @@ def _donut_slice_path(
     )
 
 
-def _slice_color(index: int) -> str:
+def _slice_color(index: int, hue_offset: float = 172.0) -> str:
     """
     Return a distinct HSL color for a chart slice.
     """
-    hue = (172 + index * 137.508) % 360
+    hue = (hue_offset + index * 137.508) % 360
     return f"hsl({hue:.1f}, 48%, 42%)"
 
 
-def render_circle_chart(committers: List[CommitterCount]) -> str:
+def format_bytes(byte_count: int) -> str:
     """
-    Render an SVG circular (donut) chart for the given list of committers.
+    Format a byte count into a compact human-readable size.
     """
-    if not committers:
-        return '<p class="empty">No committer counts stored for this repository.</p>'
+    value = float(byte_count)
+    units = ["B", "KB", "MB", "GB"]
+    unit_index = 0
+    while value >= 1024 and unit_index < len(units) - 1:
+        value /= 1024
+        unit_index += 1
+    if unit_index == 0:
+        return f"{int(value)} B"
+    return f"{value:.1f} {units[unit_index]}"
 
-    total = sum(committer.commit_count for committer in committers)
+
+def render_circle_chart(
+    slices: List[ChartSlice],
+    *,
+    center_value: str,
+    center_label: str,
+    empty_message: str,
+    aria_label: str,
+    format_value: Callable[[int, float], str],
+    hue_offset: float = 172.0,
+) -> str:
+    """
+    Render an SVG circular (donut) chart for the given slices.
+    """
+    if not slices:
+        return f'<p class="empty">{html.escape(empty_message)}</p>'
+
+    total = sum(item.value for item in slices)
     if total == 0:
-        return '<p class="empty">No committer counts stored for this repository.</p>'
+        return f'<p class="empty">{html.escape(empty_message)}</p>'
 
     center_x = 180.0
     center_y = 180.0
     outer_radius = 150.0
     inner_radius = 82.0
     current_angle = 0.0
-    slices = []
+    paths = []
     legend_items = []
 
-    for index, committer in enumerate(committers):
-        sweep = (committer.commit_count / total) * 360
-        end_angle = 360.0 if index == len(committers) - 1 else current_angle + sweep
-        color = _slice_color(index)
-        percent = (committer.commit_count / total) * 100
-        label = html.escape(committer.committer_name)
-        slices.append(
+    for index, item in enumerate(slices):
+        sweep = (item.value / total) * 360
+        end_angle = 360.0 if index == len(slices) - 1 else current_angle + sweep
+        color = item.color or _slice_color(index, hue_offset)
+        percent = (item.value / total) * 100
+        label = html.escape(item.label)
+        detail = f" {html.escape(item.detail)}" if item.detail else ""
+        paths.append(
             f'<path d="{_donut_slice_path(center_x, center_y, outer_radius, inner_radius, current_angle, end_angle)}" '
-            f'fill="{color}">'
-            f"<title>{label}: {committer.commit_count} commits ({percent:.1f}%)</title>"
+            f'fill="{color}" stroke="#fffdf8" stroke-width="2">'
+            f"<title>{label}: {format_value(item.value, percent)}{detail}</title>"
             "</path>"
         )
         legend_items.append(
@@ -390,7 +526,7 @@ def render_circle_chart(committers: List[CommitterCount]) -> str:
             <li>
                 <span class="legend-swatch" style="background:{color}"></span>
                 <span class="legend-name">{label}</span>
-                <span class="legend-value">{committer.commit_count} ({percent:.1f}%)</span>
+                <span class="legend-value">{html.escape(format_value(item.value, percent))}</span>
             </li>
             """
         )
@@ -398,10 +534,10 @@ def render_circle_chart(committers: List[CommitterCount]) -> str:
 
     return f"""
     <div class="chart-layout">
-        <svg viewBox="0 0 360 360" class="pie-chart" role="img" aria-label="Commit counts per committer">
-            {"".join(slices)}
-            <text x="{center_x}" y="{center_y - 10}" class="pie-center-value">{total}</text>
-            <text x="{center_x}" y="{center_y + 16}" class="pie-center-label">commits</text>
+        <svg viewBox="0 0 360 360" class="pie-chart" role="img" aria-label="{html.escape(aria_label)}">
+            {"".join(paths)}
+            <text x="{center_x}" y="{center_y - 10}" class="pie-center-value">{html.escape(center_value)}</text>
+            <text x="{center_x}" y="{center_y + 16}" class="pie-center-label">{html.escape(center_label)}</text>
         </svg>
         <ul class="chart-legend">
             {"".join(legend_items)}
@@ -410,15 +546,63 @@ def render_circle_chart(committers: List[CommitterCount]) -> str:
     """
 
 
+def render_committer_chart(committers: List[CommitterCount]) -> str:
+    """
+    Render the circular chart of commit counts per committer.
+    """
+    slices = [
+        ChartSlice(label=committer.committer_name, value=committer.commit_count)
+        for committer in committers
+        if committer.commit_count > 0
+    ]
+    total = sum(item.value for item in slices)
+    return render_circle_chart(
+        slices,
+        center_value=str(total),
+        center_label="commits",
+        empty_message="No committer counts stored for this repository.",
+        aria_label="Commit counts per committer",
+        format_value=lambda value, percent: f"{value} ({percent:.1f}%)",
+        hue_offset=172.0,
+    )
+
+
+def render_language_chart(languages: List[LanguageCount]) -> str:
+    """
+    Render the circular chart of language usage for a repository.
+    """
+    slices = [
+        ChartSlice(
+            label=language.language_name,
+            value=language.byte_count,
+            detail=f"({language.file_count} files)",
+            color=LANGUAGE_COLORS.get(language.language_name),
+        )
+        for language in languages
+        if language.byte_count > 0
+    ]
+    total = sum(item.value for item in slices)
+    return render_circle_chart(
+        slices,
+        center_value=format_bytes(total) if total else "0 B",
+        center_label="code",
+        empty_message="No language data stored for this repository.",
+        aria_label="Language usage by bytes of code",
+        format_value=lambda value, percent: f"{format_bytes(value)} ({percent:.1f}%)",
+        hue_offset=28.0,
+    )
+
+
 def render_repository_section(
     connection: sqlite3.Connection,
     repo: RepositorySummary,
 ) -> str:
     """
     Render an HTML section for a single repository, including its summary
-    and circular chart for all committers.
+    and circular charts for committers and languages.
     """
     committers = load_committers(connection, repo.full_name)
+    languages = load_languages(connection, repo.full_name)
     error_html = ""
     if repo.last_error:
         error_html = f'<p class="error">{html.escape(repo.last_error)}</p>'
@@ -435,9 +619,19 @@ def render_repository_section(
         <div class="stats">
             <div><span class="label">Commits</span><strong>{repo.commit_total}</strong></div>
             <div><span class="label">Committers</span><strong>{len(committers)}</strong></div>
+            <div><span class="label">Languages</span><strong>{len(languages)}</strong></div>
         </div>
         {error_html}
-        {render_circle_chart(committers)}
+        <div class="repo-charts">
+            <div class="chart-panel">
+                <h3>Committers</h3>
+                {render_committer_chart(committers)}
+            </div>
+            <div class="chart-panel">
+                <h3>Languages</h3>
+                {render_language_chart(languages)}
+            </div>
+        </div>
     </section>
     """
 
@@ -657,19 +851,29 @@ def render_html(
         }}
         .chart-layout {{
             display: grid;
-            grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
-            gap: 18px 28px;
+            grid-template-columns: minmax(140px, 210px) minmax(0, 1fr);
+            gap: 14px 16px;
             align-items: center;
+        }}
+        .repo-charts {{
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px 28px;
+            align-items: start;
+        }}
+        .chart-panel h3 {{
+            margin: 0 0 12px;
+            font-size: 1.05rem;
         }}
         .pie-chart {{
             width: 100%;
-            max-width: 320px;
+            max-width: 210px;
             height: auto;
             overflow: visible;
         }}
         .pie-center-value {{
             fill: var(--ink);
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 700;
             text-anchor: middle;
             dominant-baseline: middle;
@@ -725,6 +929,11 @@ def render_html(
             color: var(--muted);
             font-size: 0.95rem;
         }}
+        @media (max-width: 980px) {{
+            .repo-charts {{
+                grid-template-columns: 1fr;
+            }}
+        }}
         @media (max-width: 720px) {{
             .hero, .repo-card {{ padding-left: 18px; padding-right: 18px; }}
             .repo-card header {{ flex-direction: column; }}
@@ -744,7 +953,7 @@ def render_html(
     <main class="page">
         <section class="hero">
             <h1>GitHub Commit History</h1>
-            <p>This report visualizes the repository history stored in the SQLite database, with per-repository totals and a circular chart for every committer.</p>
+            <p>This report visualizes the repository history stored in the SQLite database, with per-repository totals and circular charts for committers and languages.</p>
         </section>
 
         {contributor_summary_card}

@@ -4,7 +4,7 @@
 
 The script accepts local repository paths either as positional arguments or
 through a text file, stores commit history in SQLite, keeps per-committer
-counts, and generates the HTML report after collection finishes.
+and per-language counts, and generates the HTML report after collection finishes.
 """
 
 import argparse
@@ -23,6 +23,83 @@ DEFAULT_DB_PATH = "github_commit_history.sqlite3"
 DEFAULT_REPORT_PATH = "github_commit_history_report.html"
 GIT_LOG_FORMAT = "%H%x1f%cn%x1f%ce%x1f%cd%x1f%an%x1f%ae%x1f%ad%x1f%s"
 GIT_LOG_SEPARATOR = "\x1f"
+
+LANGUAGE_BY_EXTENSION = {
+    ".asm": "Assembly",
+    ".c": "C",
+    ".cc": "C++",
+    ".cpp": "C++",
+    ".cxx": "C++",
+    ".h": "C",
+    ".hh": "C++",
+    ".hpp": "C++",
+    ".cs": "C#",
+    ".css": "CSS",
+    ".dart": "Dart",
+    ".ex": "Elixir",
+    ".exs": "Elixir",
+    ".go": "Go",
+    ".graphql": "GraphQL",
+    ".hbs": "Handlebars",
+    ".hs": "Haskell",
+    ".html": "HTML",
+    ".htm": "HTML",
+    ".ipynb": "Jupyter Notebook",
+    ".java": "Java",
+    ".js": "JavaScript",
+    ".cjs": "JavaScript",
+    ".mjs": "JavaScript",
+    ".jsx": "JavaScript",
+    ".json": "JSON",
+    ".kt": "Kotlin",
+    ".kts": "Kotlin",
+    ".less": "Less",
+    ".lua": "Lua",
+    ".md": "Markdown",
+    ".php": "PHP",
+    ".pl": "Perl",
+    ".pm": "Perl",
+    ".prisma": "Prisma",
+    ".proto": "Protocol Buffer",
+    ".py": "Python",
+    ".r": "R",
+    ".rb": "Ruby",
+    ".rs": "Rust",
+    ".sass": "Sass",
+    ".scala": "Scala",
+    ".scss": "SCSS",
+    ".sh": "Shell",
+    ".bash": "Shell",
+    ".zsh": "Shell",
+    ".sol": "Solidity",
+    ".sql": "SQL",
+    ".svelte": "Svelte",
+    ".swift": "Swift",
+    ".tf": "HCL",
+    ".toml": "TOML",
+    ".ts": "TypeScript",
+    ".tsx": "TypeScript",
+    ".vue": "Vue",
+    ".xml": "XML",
+    ".yaml": "YAML",
+    ".yml": "YAML",
+}
+
+LANGUAGE_BY_FILENAME = {
+    "cmakelists.txt": "CMake",
+    "dockerfile": "Dockerfile",
+    "makefile": "Makefile",
+}
+
+SKIP_LANGUAGE_FILENAMES = {
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "composer.lock",
+    "gemfile.lock",
+    "cargo.lock",
+    "poetry.lock",
+}
 
 
 # pylint: disable=duplicate-code
@@ -154,6 +231,15 @@ def ensure_schema(connection: sqlite3.Connection) -> None:
             PRIMARY KEY (repo_full_name, committer_key),
             FOREIGN KEY (repo_full_name) REFERENCES repositories(full_name) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS language_counts (
+            repo_full_name TEXT NOT NULL,
+            language_name TEXT NOT NULL,
+            byte_count INTEGER NOT NULL,
+            file_count INTEGER NOT NULL,
+            PRIMARY KEY (repo_full_name, language_name),
+            FOREIGN KEY (repo_full_name) REFERENCES repositories(full_name) ON DELETE CASCADE
+        );
         """
     )
 
@@ -259,6 +345,77 @@ def insert_committer_counts(
                 summary.committer_emails[key],
                 count,
             ),
+        )
+
+
+def classify_language(relative_path: str) -> Optional[str]:
+    """
+    Map a tracked file path to a language name, or None if it should be ignored.
+    """
+    path = Path(relative_path)
+    filename = path.name.lower()
+    if filename in SKIP_LANGUAGE_FILENAMES:
+        return None
+    if filename in LANGUAGE_BY_FILENAME:
+        return LANGUAGE_BY_FILENAME[filename]
+    return LANGUAGE_BY_EXTENSION.get(path.suffix.lower())
+
+
+def collect_language_counts(repository_path: Path) -> list[tuple[str, int, int]]:
+    """
+    Count tracked source files by language, returning (language, bytes, files).
+    """
+    try:
+        result = run_git_command(repository_path, ["ls-files", "-z"])
+    except subprocess.CalledProcessError as error:
+        stderr = error.stderr.strip() if error.stderr else ""
+        message = stderr or f"Failed to list files for {repository_path}"
+        raise GitRepositoryError(message) from error
+
+    totals: dict[str, list[int]] = {}
+    for raw_path in result.stdout.split("\0"):
+        relative_path = raw_path.strip()
+        if not relative_path:
+            continue
+        language = classify_language(relative_path)
+        if language is None:
+            continue
+        file_path = repository_path / relative_path
+        try:
+            size = file_path.stat().st_size
+        except OSError:
+            continue
+        if size <= 0:
+            continue
+        entry = totals.setdefault(language, [0, 0])
+        entry[0] += size
+        entry[1] += 1
+
+    return sorted(
+        (
+            (language, byte_count, file_count)
+            for language, (byte_count, file_count) in totals.items()
+        ),
+        key=lambda item: (-item[1], item[0].lower()),
+    )
+
+
+def insert_language_counts(
+    connection: sqlite3.Connection,
+    full_name: str,
+    language_counts: list[tuple[str, int, int]],
+) -> None:
+    """
+    Insert aggregated language counts for a repository.
+    """
+    for language_name, byte_count, file_count in language_counts:
+        connection.execute(
+            """
+            INSERT OR REPLACE INTO language_counts (
+                repo_full_name, language_name, byte_count, file_count
+            ) VALUES (?, ?, ?, ?)
+            """,
+            (full_name, language_name, byte_count, file_count),
         )
 
 
@@ -380,9 +537,14 @@ def store_repository(connection: sqlite3.Connection, repository_reference: str) 
                 "DELETE FROM committer_counts WHERE repo_full_name = ?",
                 (full_name,),
             )
+            connection.execute(
+                "DELETE FROM language_counts WHERE repo_full_name = ?",
+                (full_name,),
+            )
 
             summary = insert_commits(connection, full_name, repository_path)
             insert_committer_counts(connection, full_name, summary)
+            insert_language_counts(connection, full_name, collect_language_counts(repository_path))
             record_repository_status(
                 connection,
                 RepositoryStatus(
