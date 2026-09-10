@@ -1,0 +1,13 @@
+#         _ _                     
+#    __ _| (_) __ _ ___  ___  ___ 
+#   / _` | | |/ _` / __|/ _ \/ __|
+#  | (_| | | | (_| \__ \  __/\__ \
+#   \__,_|_|_|\__,_|___/\___||___/
+#                                 
+#  
+
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ealias='cd; vim .bash_aliases; source .bash_aliases; cd -'
+alias evim='cd; vim .vimrc; cd -'
+alias make='make -j$(nproc)'
