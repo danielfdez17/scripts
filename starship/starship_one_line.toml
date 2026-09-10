@@ -15,9 +15,13 @@ $line_break\
 $status\
 $character"""
 
-[time]
-disabled = false
-format = '[$time ](bold yellow)'
+[character]
+success_symbol = '[➜](bold green)'
+error_symbol = '[✗](bold red) '
+
+[directory]
+truncation_length = 0
+truncate_to_repo = false
 
 [fill]
 symbol = ' '
@@ -26,7 +30,6 @@ symbol = ' '
 disabled = false
 symbol = ''
 
-[character]
-success_symbol = '[➜](bold green)'
-error_symbol = '[✗](bold red) '
-
+[time]
+disabled = false
+format = '[$time ](bold yellow)'
