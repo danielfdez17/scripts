@@ -2,8 +2,8 @@
 
 """Render an HTML report for the GitHub commit history database.
 
-The report summarizes each repository and embeds a simple SVG bar chart for the
-top committers stored in the SQLite database created by
+The report summarizes each repository and embeds an SVG circular chart for the
+committers stored in the SQLite database created by
 store_github_commit_history.py.
 """
 
@@ -11,6 +11,7 @@ store_github_commit_history.py.
 
 import argparse
 import html
+import math
 import sqlite3
 import sys
 from dataclasses import dataclass
@@ -94,12 +95,6 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_OUTPUT_PATH,
         help=f"Path to the HTML report to generate (default: {DEFAULT_OUTPUT_PATH}).",
     )
-    parser.add_argument(
-        "--top",
-        type=int,
-        default=10,
-        help="Number of committers to show per repository (default: 10).",
-    )
     return parser.parse_args()
 
 
@@ -131,14 +126,40 @@ def load_repositories(connection: sqlite3.Connection) -> List[RepositorySummary]
     ]
 
 
+def repository_name(full_name: str) -> str:
+    """
+    Return the repository name from a stored path or full name.
+    """
+    name = Path(full_name).name
+    return name if name else full_name
+
+
+def aggregate_committers(rows: List[tuple[str, int]]) -> List[CommitterCount]:
+    """
+    Merge committers that share a display name or known alias, summing their commits.
+    """
+    grouped: dict[str, list] = {}
+    for committer_name, commit_count in rows:
+        group_name = GROUP_BY_MEMBER.get(committer_name.lower(), committer_name)
+        key = group_name.lower()
+        entry = grouped.setdefault(key, [group_name, 0])
+        entry[1] += commit_count
+
+    committers = [
+        CommitterCount(committer_name=name, commit_count=count)
+        for name, count in grouped.values()
+    ]
+    return sorted(committers, key=lambda item: (-item.commit_count, item.committer_name.lower()))
+
+
 def load_committers(
     connection: sqlite3.Connection,
     repo_full_name: str,
-    limit: int,
 ) -> List[CommitterCount]:
     """
-    Load the top committers for a given repository from the database, returning a list of
-    CommitterCount objects. The results are ordered by commit count descending,
+    Load all committers for a given repository from the database, returning a list of
+    CommitterCount objects. Duplicate names and known aliases are merged by summing
+    their commit counts. The results are ordered by commit count descending,
     then by committer name ascending for consistent display.
     If no committers are found for the repository, an empty list is returned.
     """
@@ -148,12 +169,11 @@ def load_committers(
         FROM committer_counts
         WHERE repo_full_name = ?
         ORDER BY commit_count DESC, committer_name ASC
-        LIMIT ?
         """,
-        (repo_full_name, limit),
+        (repo_full_name,),
     ).fetchall()
 
-    return [CommitterCount(committer_name=row[0], commit_count=row[1]) for row in rows]
+    return aggregate_committers(rows)
 
 
 def load_contributor_rows(
@@ -186,9 +206,11 @@ def group_contributors(
     grouped: dict[str, dict[str, object]] = {}
     for committer_name, _committer_email, repo_full_name, commit_count in rows:
         group_name = GROUP_BY_MEMBER.get(committer_name.lower(), committer_name)
+        key = group_name.lower()
         entry = grouped.setdefault(
-            group_name,
+            key,
             {
+                "group_name": group_name,
                 "commit_total": 0,
                 "repos": set(),
                 "members": set(),
@@ -200,12 +222,12 @@ def group_contributors(
 
     summaries = [
         GroupSummary(
-            group_name=group_name,
+            group_name=entry["group_name"],
             commit_total=entry["commit_total"],
             repository_total=len(entry["repos"]),
             members=sorted(entry["members"]),
         )
-        for group_name, entry in grouped.items()
+        for entry in grouped.values()
     ]
     return sorted(summaries, key=lambda item: (-item.commit_total, item.group_name.lower()))
 
@@ -276,53 +298,127 @@ def render_contributor_summary_card(connection: sqlite3.Connection) -> str:
     """
 
 
-def render_bar_chart(committers: List[CommitterCount]) -> str:
+def _polar(center_x: float, center_y: float, radius: float, angle_deg: float) -> tuple[float, float]:
     """
-    Render an SVG bar chart for the given list of committers and their commit counts.
+    Convert polar coordinates to SVG cartesian coordinates, with 0 degrees at the top.
+    """
+    angle_rad = math.radians(angle_deg - 90)
+    return (
+        center_x + radius * math.cos(angle_rad),
+        center_y + radius * math.sin(angle_rad),
+    )
+
+
+def _donut_slice_path(
+    center_x: float,
+    center_y: float,
+    outer_radius: float,
+    inner_radius: float,
+    start_angle: float,
+    end_angle: float,
+) -> str:
+    """
+    Build an SVG path for a single donut slice.
+    """
+    sweep = end_angle - start_angle
+    if sweep >= 359.999:
+        return (
+            f"M {center_x:.3f} {center_y - outer_radius:.3f} "
+            f"A {outer_radius:.3f} {outer_radius:.3f} 0 1 1 {center_x:.3f} {center_y + outer_radius:.3f} "
+            f"A {outer_radius:.3f} {outer_radius:.3f} 0 1 1 {center_x:.3f} {center_y - outer_radius:.3f} "
+            f"M {center_x:.3f} {center_y - inner_radius:.3f} "
+            f"A {inner_radius:.3f} {inner_radius:.3f} 0 1 0 {center_x:.3f} {center_y + inner_radius:.3f} "
+            f"A {inner_radius:.3f} {inner_radius:.3f} 0 1 0 {center_x:.3f} {center_y - inner_radius:.3f} "
+            "Z"
+        )
+
+    large_arc = 1 if sweep > 180 else 0
+    outer_start = _polar(center_x, center_y, outer_radius, start_angle)
+    outer_end = _polar(center_x, center_y, outer_radius, end_angle)
+    inner_end = _polar(center_x, center_y, inner_radius, end_angle)
+    inner_start = _polar(center_x, center_y, inner_radius, start_angle)
+    return (
+        f"M {outer_start[0]:.3f} {outer_start[1]:.3f} "
+        f"A {outer_radius:.3f} {outer_radius:.3f} 0 {large_arc} 1 {outer_end[0]:.3f} {outer_end[1]:.3f} "
+        f"L {inner_end[0]:.3f} {inner_end[1]:.3f} "
+        f"A {inner_radius:.3f} {inner_radius:.3f} 0 {large_arc} 0 {inner_start[0]:.3f} {inner_start[1]:.3f} "
+        "Z"
+    )
+
+
+def _slice_color(index: int) -> str:
+    """
+    Return a distinct HSL color for a chart slice.
+    """
+    hue = (172 + index * 137.508) % 360
+    return f"hsl({hue:.1f}, 48%, 42%)"
+
+
+def render_circle_chart(committers: List[CommitterCount]) -> str:
+    """
+    Render an SVG circular (donut) chart for the given list of committers.
     """
     if not committers:
         return '<p class="empty">No committer counts stored for this repository.</p>'
 
-    max_count = max(committer.commit_count for committer in committers)
-    row_height = 34
-    chart_width = 720
-    label_width = 280
-    value_width = 90
-    bar_width = chart_width - label_width - value_width - 40
-    chart_height = 38 + (len(committers) * row_height)
+    total = sum(committer.commit_count for committer in committers)
+    if total == 0:
+        return '<p class="empty">No committer counts stored for this repository.</p>'
 
-    bars = []
+    center_x = 180.0
+    center_y = 180.0
+    outer_radius = 150.0
+    inner_radius = 82.0
+    current_angle = 0.0
+    slices = []
+    legend_items = []
+
     for index, committer in enumerate(committers):
-        y = 30 + index * row_height
-        width = 0 if max_count == 0 else int((committer.commit_count / max_count) * bar_width)
-        bars.append(
+        sweep = (committer.commit_count / total) * 360
+        end_angle = 360.0 if index == len(committers) - 1 else current_angle + sweep
+        color = _slice_color(index)
+        percent = (committer.commit_count / total) * 100
+        label = html.escape(committer.committer_name)
+        slices.append(
+            f'<path d="{_donut_slice_path(center_x, center_y, outer_radius, inner_radius, current_angle, end_angle)}" '
+            f'fill="{color}">'
+            f"<title>{label}: {committer.commit_count} commits ({percent:.1f}%)</title>"
+            "</path>"
+        )
+        legend_items.append(
             f"""
-            <g>
-                <text x="0" y="{y}" class="chart-label">{html.escape(committer.committer_name)}</text>
-                <rect x="{label_width}" y="{y - 15}" width="{width}" height="18" rx="9"></rect>
-                <text x="{label_width + bar_width + 24}" y="{y}" class="chart-value">{committer.commit_count}</text>
-            </g>
+            <li>
+                <span class="legend-swatch" style="background:{color}"></span>
+                <span class="legend-name">{label}</span>
+                <span class="legend-value">{committer.commit_count} ({percent:.1f}%)</span>
+            </li>
             """
         )
+        current_angle = end_angle
 
-    return (
-        f'<svg viewBox="0 0 {chart_width} {chart_height}" class="chart" '
-        'role="img" aria-label="Commit counts per committer">'
-        + "".join(bars)
-        + "</svg>"
-    )
+    return f"""
+    <div class="chart-layout">
+        <svg viewBox="0 0 360 360" class="pie-chart" role="img" aria-label="Commit counts per committer">
+            {"".join(slices)}
+            <text x="{center_x}" y="{center_y - 10}" class="pie-center-value">{total}</text>
+            <text x="{center_x}" y="{center_y + 16}" class="pie-center-label">commits</text>
+        </svg>
+        <ul class="chart-legend">
+            {"".join(legend_items)}
+        </ul>
+    </div>
+    """
 
 
 def render_repository_section(
     connection: sqlite3.Connection,
     repo: RepositorySummary,
-    top: int,
 ) -> str:
     """
     Render an HTML section for a single repository, including its summary
-    and bar chart for top committers.
+    and circular chart for all committers.
     """
-    committers = load_committers(connection, repo.full_name, top)
+    committers = load_committers(connection, repo.full_name)
     error_html = ""
     if repo.last_error:
         error_html = f'<p class="error">{html.escape(repo.last_error)}</p>'
@@ -331,17 +427,17 @@ def render_repository_section(
     <section class="repo-card">
         <header>
             <div>
-                <h2>{html.escape(repo.full_name)}</h2>
+                <h2>{html.escape(repository_name(repo.full_name))}</h2>
                 <p class="meta">Collected at {html.escape(repo.last_collected_at)}</p>
             </div>
             {status_badge(repo.last_status)}
         </header>
         <div class="stats">
             <div><span class="label">Commits</span><strong>{repo.commit_total}</strong></div>
-            <div><span class="label">Committers</span><strong>{repo.committer_total}</strong></div>
+            <div><span class="label">Committers</span><strong>{len(committers)}</strong></div>
         </div>
         {error_html}
-        {render_bar_chart(committers)}
+        {render_circle_chart(committers)}
     </section>
     """
 
@@ -349,13 +445,12 @@ def render_repository_section(
 def render_html(
     repositories: List[RepositorySummary],
     connection: sqlite3.Connection,
-    top: int,
     db_path: str,
 ) -> str:
     """
     Render the HTML report for the GitHub commit history.
     """
-    sections = "\n".join(render_repository_section(connection, repo, top) for repo in repositories)
+    sections = "\n".join(render_repository_section(connection, repo) for repo in repositories)
     if not sections:
         sections = (
             '<section class="repo-card"><p class="empty">'
@@ -560,22 +655,62 @@ def render_html(
             padding: 14px 16px;
             border: 1px solid var(--border);
         }}
-        .chart {{
+        .chart-layout {{
+            display: grid;
+            grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+            gap: 18px 28px;
+            align-items: center;
+        }}
+        .pie-chart {{
             width: 100%;
+            max-width: 320px;
             height: auto;
             overflow: visible;
         }}
-        .chart rect {{ fill: #0f766e; }}
-        .chart-label {{
+        .pie-center-value {{
             fill: var(--ink);
-            font-size: 14px;
+            font-size: 28px;
+            font-weight: 700;
+            text-anchor: middle;
             dominant-baseline: middle;
         }}
-        .chart-value {{
+        .pie-center-label {{
             fill: var(--muted);
-            font-size: 14px;
+            font-size: 13px;
+            text-anchor: middle;
             dominant-baseline: middle;
-            text-anchor: end;
+        }}
+        .chart-legend {{
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            display: grid;
+            gap: 8px;
+            max-height: 320px;
+            overflow: auto;
+        }}
+        .chart-legend li {{
+            display: grid;
+            grid-template-columns: 12px minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+        }}
+        .legend-swatch {{
+            width: 12px;
+            height: 12px;
+            border-radius: 999px;
+        }}
+        .legend-name {{
+            color: var(--ink);
+            font-size: 0.95rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }}
+        .legend-value {{
+            color: var(--muted);
+            font-size: 0.9rem;
+            white-space: nowrap;
         }}
         .empty, .error {{ margin: 0; line-height: 1.6; }}
         .error {{
@@ -594,6 +729,14 @@ def render_html(
             .hero, .repo-card {{ padding-left: 18px; padding-right: 18px; }}
             .repo-card header {{ flex-direction: column; }}
             .status {{ align-self: flex-start; }}
+            .chart-layout {{
+                grid-template-columns: 1fr;
+                justify-items: center;
+            }}
+            .chart-legend {{
+                width: 100%;
+                max-height: none;
+            }}
         }}
     </style>
 </head>
@@ -601,7 +744,7 @@ def render_html(
     <main class="page">
         <section class="hero">
             <h1>GitHub Commit History</h1>
-            <p>This report visualizes the repository history stored in the SQLite database, with per-repository totals and a bar chart for the top committers.</p>
+            <p>This report visualizes the repository history stored in the SQLite database, with per-repository totals and a circular chart for every committer.</p>
         </section>
 
         {contributor_summary_card}
@@ -609,7 +752,6 @@ def render_html(
         <section class="overview" aria-label="summary">
             <div class="tile"><span class="label">Repositories</span><strong>{total_repositories}</strong></div>
             <div class="tile"><span class="label">Total commits</span><strong>{total_commits}</strong></div>
-            <div class="tile"><span class="label">Top committers shown</span><strong>{top}</strong></div>
         </section>
 
         {sections}
@@ -636,7 +778,7 @@ def main() -> int:
         connection = sqlite3.connect(str(db_path))
         load_schema(connection)
         repositories = load_repositories(connection)
-        html_report = render_html(repositories, connection, args.top, str(db_path))
+        html_report = render_html(repositories, connection, str(db_path))
     except (sqlite3.Error, RuntimeError) as error:
         print(f"Failed to build report: {error}")
         return 1
