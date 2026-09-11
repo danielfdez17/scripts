@@ -9,5 +9,6 @@
 alias ..='cd ..'
 alias ...='cd ../..'
 alias ealias='cd; vim .bash_aliases; source .bash_aliases; cd -'
+alias ebashrc='cd; vim .bashrc; source .bashrc; cd -'
 alias evim='cd; vim .vimrc; cd -'
 alias make='make -j$(nproc)'
