@@ -4,6 +4,9 @@
 #
 # Prompt layout:
 #   ~/relative/path  branch ⇡2 ⇣1 +1 !2 ?3 =1 $2 [merge]  ➜
+#   ~/relative/path  branch ⇡2 ⇣1 +1 !2 ?3 =1 $2 [merge]  1 ✗
+#
+# The last exit code appears in red immediately before ✗ when it is non-zero.
 #
 # Git tokens: ⇡ ahead  ⇣ behind  + staged  ! unstaged  ? untracked
 #             = conflicts  $ stash  [merge]/[rebase]/[cherry-pick]/[revert]/[bisect]
@@ -177,7 +180,7 @@ __scripts_set_prompt() {
     if (( exit_code == 0 )); then
         prompt_char="${__scripts_prompt_green}➜${__scripts_prompt_reset}"
     else
-        prompt_char="${__scripts_prompt_red}✗${__scripts_prompt_reset}"
+        prompt_char="${__scripts_prompt_red}${exit_code} ✗${__scripts_prompt_reset}"
     fi
 
     # \w is $PWD with $HOME abbreviated as ~. Keep the full path from $HOME.
