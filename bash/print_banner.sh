@@ -20,20 +20,16 @@ BOTTOM_RIGHT_CORNER="${BLUE}╯${RESET}"
 HORIZONTAL_LINE="${BLUE}━${RESET}"
 VERTICAL_LINE="${BLUE}┃${RESET}"
 
-box_width=50
-inner_width=$((box_width - 2))
 message="$*"
 message_length=${#message}
-padding=$((inner_width - message_length))
-if ((padding < 0)); then
-    padding=0
-fi
-left_padding=$((padding / 2))
-right_padding=$((padding - left_padding))
+side_padding=2
+inner_width=$((message_length + side_padding * 2))
+left_padding=$side_padding
+right_padding=$side_padding
 
 top_border="$TOP_LEFT_CORNER"
 bottom_border="$BOTTOM_LEFT_CORNER"
-for ((i = 0; i < box_width - 2; i++)); do
+for ((i = 0; i < inner_width; i++)); do
     top_border+="$HORIZONTAL_LINE"
     bottom_border+="$HORIZONTAL_LINE"
 done
