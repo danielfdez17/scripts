@@ -29,12 +29,49 @@ COMPOSE := docker compose
 
 .DEFAULT_GOAL := help
 
+.PHONY: help
+# ── Utils
 help: ## Show available targets
 	@\$(PRINT_BANNER) "Available Makefile Targets"
-	@grep -hE '^[a-zA-Z_-]+:.*## .*\$\$' Makefile | \\
-		awk 'BEGIN {FS = ":.*## "}; {printf "  \$(CYAN)%-15s\$(RESET) %s\n", \$\$1, \$\$2}'
+	@LC_ALL=C.UTF-8 awk '\\
+		function trim(s) { \\
+			sub(/^[[:space:]]+/, "", s); \\
+			sub(/[[:space:]]+\$\$/, "", s); \\
+			return s \\
+		} \\
+		/^# ──[[:space:]]+/ { \\
+			title = \$\$0; \\
+			sub(/^# ──[[:space:]]+/, "", title); \\
+			sub(/[[:space:]]*─+[[:space:]]*\$\$/, "", title); \\
+			title = trim(title); \\
+			n++; kind[n] = "section"; text[n] = title; \\
+			next \\
+		} \\
+		/^[a-zA-Z_-]+:.*## / { \\
+			name = \$\$0; sub(/:.*/, "", name); \\
+			msg = \$\$0; sub(/^[^#]*## /, "", msg); \\
+			n++; kind[n] = "target"; names[n] = name; msgs[n] = msg; \\
+			if (length(name) > name_width) name_width = length(name); \\
+			next \\
+		} \\
+		END { \\
+			for (i = 1; i <= n; i++) \\
+				if (kind[i] == "target") { \\
+					line = 2 + name_width + 1 + length(msgs[i]); \\
+					if (line > line_width) line_width = line \\
+				} \\
+			for (i = 1; i <= n; i++) \\
+				if (kind[i] == "section") { \\
+					label = "── " text[i] " "; \\
+					pad = line_width - length(label); \\
+					if (pad < 1) pad = 1; \\
+					dashes = ""; \\
+					for (j = 0; j < pad; j++) dashes = dashes "─"; \\
+					printf "%s%s\n", label, dashes \\
+				} else \\
+					printf "  \$(CYAN)%-*s\$(RESET) %s\n", name_width, names[i], msgs[i] \\
+		}' Makefile
 
-# ── Utils ────────────────────────────────────────────────────────────────
 .PHONY: update-submodules
 update-submodules: ## Update git submodules
 	@\$(PRINT_BANNER) "Updating Git Submodules"
