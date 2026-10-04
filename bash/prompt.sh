@@ -11,11 +11,15 @@
 # Git tokens: ⇡ ahead  ⇣ behind  + staged  ! unstaged  ? untracked
 #             = conflicts  $ stash  [merge]/[rebase]/[cherry-pick]/[revert]/[bisect]
 #
+# Also configures colored ls output:
+#   folders (blue)  executables (green)  compressed (red)  normal files (default)
+#
 # Depends only on bash and git. No starship, oh-my-posh, or other prompt tools.
 #
 # Optional environment variables:
 #   SCRIPTS_PROMPT=0      skip installing the prompt
 #   SCRIPTS_PROMPT_GIT=0  hide the git segment (path-only prompt)
+#   SCRIPTS_PROMPT_LS=0   skip colored ls / LS_COLORS setup
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
     echo "Source this file from ~/.bashrc:" >&2
@@ -43,6 +47,32 @@ if [[ -n "${NO_COLOR:-}" ]]; then
     __scripts_prompt_cyan=''
     __scripts_prompt_magenta=''
 fi
+
+# Colored ls: folders, executables, archives, and normal files.
+__scripts_prompt_setup_ls_colors() {
+    [[ "${SCRIPTS_PROMPT_LS:-1}" != "0" ]] || return
+    [[ -z "${NO_COLOR:-}" ]] || return
+
+    # di=folder  ex=executable  fi=normal file  *.*=compressed/archive
+    LS_COLORS='di=1;34:ex=1;32:fi=0'
+    LS_COLORS+=':*.tar=1;31:*.tgz=1;31:*.arc=1;31:*.arj=1;31:*.taz=1;31'
+    LS_COLORS+=':*.lha=1;31:*.lz4=1;31:*.lzh=1;31:*.lzma=1;31:*.tlz=1;31'
+    LS_COLORS+=':*.txz=1;31:*.tzo=1;31:*.t7z=1;31:*.zip=1;31:*.z=1;31'
+    LS_COLORS+=':*.dz=1;31:*.gz=1;31:*.lrz=1;31:*.lz=1;31:*.lzo=1;31'
+    LS_COLORS+=':*.xz=1;31:*.zst=1;31:*.tzst=1;31:*.bz2=1;31:*.bz=1;31'
+    LS_COLORS+=':*.tbz=1;31:*.tbz2=1;31:*.tz=1;31:*.deb=1;31:*.rpm=1;31'
+    LS_COLORS+=':*.jar=1;31:*.war=1;31:*.ear=1;31:*.sar=1;31:*.rar=1;31'
+    LS_COLORS+=':*.alz=1;31:*.ace=1;31:*.zoo=1;31:*.cpio=1;31:*.7z=1;31'
+    LS_COLORS+=':*.rz=1;31:*.cab=1;31:*.wim=1;31:*.swm=1;31:*.dwm=1;31'
+    LS_COLORS+=':*.esd=1;31:*.zipx=1;31'
+    export LS_COLORS
+
+    alias ls='ls --color=auto'
+    alias ll='ls -alF --color=auto'
+    alias la='ls -A --color=auto'
+}
+
+__scripts_prompt_setup_ls_colors
 
 # Append a status token (symbol + optional count) to the git segment.
 __scripts_prompt_append() {
