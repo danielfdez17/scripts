@@ -193,7 +193,8 @@ __scripts_prompt_git() {
     __scripts_prompt_append segment "$__scripts_prompt_yellow" "!" "$unstaged"
     __scripts_prompt_append segment "$__scripts_prompt_cyan" "?" "$untracked"
     __scripts_prompt_append segment "$__scripts_prompt_red" "=" "$conflicted"
-    __scripts_prompt_append segment "$__scripts_prompt_yellow" '$' "$stashed"
+    # Escape as \\$ so PS1 promptvars leaves a literal "$N" (unescaped $1 is eaten).
+    __scripts_prompt_append segment "$__scripts_prompt_yellow" '\\$' "$stashed"
     if [[ -n "$operation" ]]; then
         __scripts_prompt_append segment "$__scripts_prompt_red$__scripts_prompt_bold" "[${operation}]"
     fi
