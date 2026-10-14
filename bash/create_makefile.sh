@@ -19,11 +19,11 @@ FAIL := \$(RED)✗
 INFO := \$(CYAN)ℹ
 WARN := \$(YELLOW)⚠
 
-PRINT_BANNER := ./scripts/bash/print_banner.sh
-PRINT_SUCCESS := ./scripts/bash/print_success.sh
-PRINT_FAIL := ./scripts/bash/print_fail.sh
-PRINT_INFO := ./scripts/bash/print_info.sh
-PRINT_WARN := ./scripts/bash/print_warn.sh
+PRINT_BANNER := ./scripts/bash/print_banner.sh || echo 
+PRINT_SUCCESS := ./scripts/bash/print_success.sh || echo 
+PRINT_FAIL := ./scripts/bash/print_fail.sh || echo 
+PRINT_INFO := ./scripts/bash/print_info.sh || echo 
+PRINT_WARN := ./scripts/bash/print_warn.sh || echo
 
 COMPOSE := docker compose
 
@@ -74,7 +74,7 @@ help: ## Show available targets
 
 .PHONY: update-submodules
 update-submodules: ## Update git submodules
-	@\$(PRINT_BANNER) "Updating Git Submodules" || echo "Updating Git Submodules"
+	@\$(PRINT_BANNER) "Updating Git Submodules"
 	@git submodule update --init --recursive --remote
 	@\$(PRINT_SUCCESS) "Git submodules updated successfully!"
 
