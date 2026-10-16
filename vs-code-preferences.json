@@ -1,10 +1,16 @@
-"workbench.colorCustomizations": {
-	"activityBar.background": "#000000",
-	"editor.background": "#000000",
-	"editorGroupHeader.tabsBackground": "#000000",
-	"panel.background": "#000000",
-	"sideBar.background": "#000000",
-	"statusBar.background": "#000000",
-	"terminal.background": "#000000",
-	"titleBar.activeBackground": "#000000"
-},
+{
+    "window.autoDetectColorScheme": true,
+    "files.autoSave": "afterDelay",
+	"terminal.integrated.cursorBlinking": true,
+	"terminal.integrated.cursorStyle": "line",
+    "workbench.colorCustomizations": {
+		"activityBar.background": "#000000",
+		"editor.background": "#000000",
+		"editorGroupHeader.tabsBackground": "#000000",
+		"panel.background": "#000000",
+		"sideBar.background": "#000000",
+		"statusBar.background": "#000000",
+		"terminal.background": "#000000",
+		"titleBar.activeBackground": "#000000"
+	},
+}
