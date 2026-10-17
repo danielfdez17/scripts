@@ -25,6 +25,8 @@ PRINT_FAIL := ./scripts/bash/print_fail.sh || echo
 PRINT_INFO := ./scripts/bash/print_info.sh || echo 
 PRINT_WARN := ./scripts/bash/print_warning.sh || echo
 
+RUN_AND_LOG := ./scripts/bash/run_and_log.sh
+
 COMPOSE := docker compose
 
 .DEFAULT_GOAL := help
