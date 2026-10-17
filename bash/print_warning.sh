@@ -1,8 +1,12 @@
 #!/usr/bin/bash
 
-set -e
+print_warning() {
+    local yellow='\033[1;33m'
+    local nc='\033[0m'
+    echo -e "${yellow}⚠ ${1} ${nc}"
+}
 
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-echo -e "${YELLOW}⚠ ${1} ${NC}"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    set -e
+    print_warning "$1"
+fi

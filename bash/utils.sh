@@ -2,26 +2,16 @@
 
 set -e
 
-# Utility functions for scripts
-
-RED='\033[0;31m'
-CYAN='\033[0;36m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-print_error() {
-    echo -e "$RED✗ $1 $NC"
-}
-
-print_info() {
-    echo -e "$CYANℹ $1 $NC"
-}
-
-print_success() {
-    echo -e "$GREEN🗸 $1 $NC"
-}
-
-print_warning() {
-    echo -e "$YELLOW⚠ $1 $NC"
-}
+script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=print_error.sh
+. "${script_dir}/print_error.sh"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=print_info.sh
+. "${script_dir}/print_info.sh"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=print_success.sh
+. "${script_dir}/print_success.sh"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=print_warning.sh
+. "${script_dir}/print_warning.sh"
