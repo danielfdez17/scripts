@@ -1,3 +1,15 @@
+# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    Makefile                                           :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: danfern3 <danfern3@student.42.fr>          +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2026/10/17 13:37:19 by danfern3          #+#    #+#              #
+#    Updated: 2026/10/17 13:53:23 by danfern3         ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
+
 SHELL := /usr/bin/bash
 .SHELLFLAGS := -ec
 
@@ -12,6 +24,15 @@ SUCCESS := $(GREEN)✓
 FAIL := $(RED)✗
 INFO := $(CYAN)ℹ
 WARN := $(YELLOW)⚠
+
+PRINT_BANNER := ./bash/print_banner.sh 
+PRINT_SUCCESS := ./bash/print_success.sh 
+PRINT_FAIL := ./bash/print_fail.sh 
+PRINT_INFO := ./bash/print_info.sh 
+PRINT_WARN := ./bash/print_warning.sh
+
+RUN_AND_LOG := ./bash/run_and_log.sh
+
 
 # * Top row (╭━━━╮) - round corners, full-span
 # * Bottom row (╰━━━╯) - round corners, full-span
@@ -35,108 +56,64 @@ CLOSE_JUNCTION := $(ORANGE)┣$(RESET)$(ORANGE)━$(RESET)$(ORANGE)┫$(RESET)
 
 .DEFAULT_GOAL := help
 
-# Reusable text banner: $(call print_banner,Your message)
-define print_banner
-box_width=50; \
-inner_width=$$((box_width - 2)); \
-message="$(1)"; \
-message_length=$${#message}; \
-padding=$$((inner_width - message_length)); \
-left_padding=$$((padding / 2)); \
-right_padding=$$((padding - left_padding)); \
-top_border="$(TOP_LEFT_CORNER)"; \
-bottom_border="$(BOTTOM_LEFT_CORNER)"; \
-horizontal_line="$(HORIZONTAL_LINE)"; \
-vertical_line="$(VERTICAL_LINE)"; \
-for ((i=0; i<box_width-2; i++)); do top_border="$$top_border$$horizontal_line"; bottom_border="$$bottom_border$$horizontal_line"; done; \
-top_border="$$top_border$(TOP_RIGHT_CORNER)"; \
-bottom_border="$$bottom_border$(BOTTOM_RIGHT_CORNER)"; \
-printf "%s\n" "$$top_border"; \
-printf "%s%*s%s%*s%s\n" "$$vertical_line" "$$left_padding" '' "$$message" "$$right_padding" '' "$$vertical_line"; \
-printf "%s\n" "$$bottom_border"
-endef
-
-define print_error
-echo -e "$(FAIL) $(1)$(RESET)"
-endef
-
-define print_success
-echo -e "$(SUCCESS) $(1)$(RESET)"
-endef
-
 .PHONY: help
+# ── Utils
 help: ## Show available targets
-	@$(call print_banner,Available Makefile Targets)
-	@echo ""
-	@grep -hE '^[a-zA-Z_-]+:.*## .*$$' Makefile | \
-		awk 'BEGIN {FS = ":.*## "}; {printf "  $(CYAN)%-35s$(RESET) %s\n", $$1, $$2}'
-	@echo ""
-
-# ── Utils ────────────────────────────────────────────────────────────────
-.PHONY: update-submodules
-update-submodules: ## Update git submodules
-	@$(call print_banner,Updating Git Submodules)
-	@./update_submodules.sh
-	@$(call print_success,Git submodules updated successfully!)
-
-.PHONY: clone-scripts-submodule
-clone-scripts-submodule: ## Clone the scripts submodule
-	@$(call print_banner,Cloning Scripts Submodule)
-	@git submodule add https://github.com/danielfdez17/scripts.git ./vendor/scripts
-	@$(call print_success,Scripts submodule cloned successfully!)
-
-.PHONY: remove-scripts-submodule
-remove-scripts-submodule: ## Remove the scripts submodule
-	@$(call print_banner,Removing Scripts Submodule)
-	@./remove_submodule.sh vendor/scripts
-	@$(call print_success,Scripts submodule removed successfully!)
-
-.PHONY: merge-to-dev
-merge-to-dev: ## Merge the current branch into 'develop'
-	@$(call print_banner,Merging Current Branch into 'dev')
-	@./merge_to_dev.sh
-	@$(call print_success,Current branch merged into 'dev' successfully!)
-
-.PHONY: merge-dev-to-main
-merge-dev-to-main: ## Merge 'develop' into 'main'
-	@$(call print_banner,Merging 'develop' into 'main')
-	@./merge_dev_to_main.sh
-	@$(call print_success,'develop' merged into 'main' successfully!)
-
-.PHONY: push-to-origin
-push-to-origin: ## Push the current branch to 'origin'
-	@$(call print_banner,Pushing Current Branch to 'origin')
-	@./push_to_origin.sh
-	@$(call print_success,Current branch pushed to 'origin' successfully!)
-
-.PHONY: clone-transcendence-repositories
-clone-transcendence-repositories: ## Clone all Transcendence repositories listed in transcendence_local.txt
-	@$(call print_banner,Cloning Transcendence Repositories)
-	@./42/transcendence/clone_transcendence_repos.sh
-	@$(call print_success,Transcendence repositories cloned successfully!)
-
-.PHONY: collect-git-commit-history
-collect-git-commit-history: ## Collect git commit history into a file
-	@$(MAKE) -s clone-transcendence-repositories
-	@$(call print_banner,Collecting Git Commit History)
-	@./42/transcendence/create_commit_history.sh
-	@$(call print_success,Git commit history collected successfully!)
+	@$(PRINT_BANNER) "Available Makefile Targets"
+	@LC_ALL=C.UTF-8 awk '\
+		function trim(s) { \
+			sub(/^[[:space:]]+/, "", s); \
+			sub(/[[:space:]]+$$/, "", s); \
+			return s \
+		} \
+		/^# ──[[:space:]]+/ { \
+			title = $$0; \
+			sub(/^# ──[[:space:]]+/, "", title); \
+			sub(/[[:space:]]*─+[[:space:]]*$$/, "", title); \
+			title = trim(title); \
+			n++; kind[n] = "section"; text[n] = title; \
+			next \
+		} \
+		/^[a-zA-Z_-]+:.*## / { \
+			name = $$0; sub(/:.*/, "", name); \
+			msg = $$0; sub(/^[^#]*## /, "", msg); \
+			n++; kind[n] = "target"; names[n] = name; msgs[n] = msg; \
+			if (length(name) > name_width) name_width = length(name); \
+			next \
+		} \
+		END { \
+			for (i = 1; i <= n; i++) \
+				if (kind[i] == "target") { \
+					line = 2 + name_width + 1 + length(msgs[i]); \
+					if (line > line_width) line_width = line \
+				} \
+			for (i = 1; i <= n; i++) \
+				if (kind[i] == "section") { \
+					label = "── " text[i] " "; \
+					pad = line_width - length(label); \
+					if (pad < 1) pad = 1; \
+					dashes = ""; \
+					for (j = 0; j < pad; j++) dashes = dashes "─"; \
+					printf "%s%s\n", label, dashes \
+				} else \
+					printf "  $(CYAN)%-*s$(RESET) %s\n", name_width, names[i], msgs[i] \
+		}' Makefile
 
 .PHONY: lint-bash-scripts
 lint-bash-scripts: ## Lint all bash scripts in the repository
-	@$(call print_banner,Linting Bash Scripts)
-	@./lint_bash_scripts.sh
-	@$(call print_success,Bash scripts linted successfully!)
+	@$(PRINT_BANNER) "Linting Bash Scripts"
+	@$(RUN_AND_LOG) -c "./bash/lint_bash_scripts.sh"
+	@$(PRINT_SUCCESS) "Bash scripts linted successfully!"
 
 .PHONY: lint-python-scripts
 lint-python-scripts: ## Lint all Python scripts in the repository
 	@$(call print_banner,Linting Python Scripts)
-	@./lint_python_scripts.py
-	@$(call print_success,Python scripts linted successfully!)
+	@./python/lint_python_scripts.py
+	@$(PRINT_SUCCESS) "Python scripts linted successfully!"
 
 .PHONY: lint
 lint: ## Lint all bash and Python scripts
-	@$(call print_banner,Linting All Scripts)
+	@$(PRINT_BANNER) "Linting All Scripts"
 	@$(MAKE) -s lint-bash-scripts
 	@$(MAKE) -s lint-python-scripts
-	@$(call print_success,All scripts linted successfully!)
+	@$(PRINT_SUCCESS) "All scripts linted successfully!"
