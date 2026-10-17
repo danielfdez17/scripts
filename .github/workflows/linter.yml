@@ -29,4 +29,6 @@ jobs:
       - name: Lint bash scripts
         run: make lint-bash-scripts
       - name: Lint python scripts
-        run: make lint-python-scripts
+        run: |
+          apt install pylint
+          make lint-python-scripts
