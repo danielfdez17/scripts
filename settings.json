@@ -1,6 +1,7 @@
 {
 	"42header.email": "danfern3@student.42.fr",
 	"42header.username": "danfern3",
+	"editor.renderWhitespace": "all",
 	"extensions.allowed": {
 		"anysphere.remote-containers": true,
 		"anysphere.remote-ssh": true,
