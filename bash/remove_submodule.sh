@@ -2,7 +2,10 @@
 
 set -e
 
-. "$(dirname "$0")/utils.sh"
+script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=utils.sh
+. "${script_dir}/utils.sh"
 
 if [ ! -d ".git" ]; then
     print_error "This script must be run from the root of a git repository."

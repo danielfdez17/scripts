@@ -2,7 +2,10 @@
 
 set -e
 
-. "$(dirname "$0")/utils.sh"
+script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=utils.sh
+. "${script_dir}/utils.sh"
 
 if [ -z "$1" ]; then
   print_error "No branch name provided. Please specify the branch to push as an argument."

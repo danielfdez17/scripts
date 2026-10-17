@@ -2,7 +2,10 @@
 
 set -e
 
-. "$(dirname "$0")/utils.sh"
+script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=utils.sh
+. "${script_dir}/utils.sh"
 
 # If the current branch is not develop, switch to develop first
 current_branch=$(git branch --show-current)

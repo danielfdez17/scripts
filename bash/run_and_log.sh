@@ -46,7 +46,7 @@ now_ms() {
 
 message=
 shell_command=
-mode=exec
+mode=$(exec)
 
 if [[ $# -eq 0 ]]; then
 	usage >&2

@@ -1,6 +1,9 @@
 #!/usr/bin/bash
 
-. "$(dirname "$0")/utils.sh"
+script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=utils.sh
+. "${script_dir}/utils.sh"
 
 if [ ! "$1" ]; then
 	print_error "This script should receive at least one GitHub repository name as argument"

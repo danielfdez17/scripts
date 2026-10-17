@@ -2,7 +2,10 @@
 
 set -e # Exit immediately if a command exits with a non-zero status, and treat unset variables as an error when substituting.
 
-. "$(dirname "$0")/utils.sh" # Source the utils script for printing messages and other utilities.
+script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=utils.sh
+. "${script_dir}/utils.sh"
 
 # This script is used to create a default header to files
 
