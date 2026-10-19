@@ -19,11 +19,11 @@ FAIL := \$(RED)✗
 INFO := \$(CYAN)ℹ
 WARN := \$(YELLOW)⚠
 
-PRINT_BANNER := ./scripts/bash/print_banner.sh || echo 
-PRINT_SUCCESS := ./scripts/bash/print_success.sh || echo 
-PRINT_FAIL := ./scripts/bash/print_fail.sh || echo 
-PRINT_INFO := ./scripts/bash/print_info.sh || echo 
-PRINT_WARN := ./scripts/bash/print_warning.sh || echo
+PRINT_BANNER := ./scripts/bash/print_banner.sh
+PRINT_SUCCESS := ./scripts/bash/print_success.sh
+PRINT_FAIL := ./scripts/bash/print_fail.sh
+PRINT_INFO := ./scripts/bash/print_info.sh
+PRINT_WARN := ./scripts/bash/print_warning.sh
 
 RUN_AND_LOG := ./scripts/bash/run_and_log.sh
 
