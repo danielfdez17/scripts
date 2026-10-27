@@ -1,7 +1,13 @@
 {
 	"42header.email": "danfern3@student.42.fr",
 	"42header.username": "danfern3",
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"editor.fontFamily": "'JetBrains Mono', Consolas, 'Courier New', monospace",
+	"editor.fontLigatures": true,
+	"editor.formatOnSave": true,
+	"editor.mouseWheelZoom": true,
 	"editor.renderWhitespace": "all",
+	"eslint.enable": true,
 	"extensions.allowed": {
 		"anysphere.remote-containers": true,
 		"anysphere.remote-ssh": true,
@@ -19,8 +25,28 @@
 		"**/.svn": true,
 		"**/Thumbs.db": true
 	},
+	"less.validate": false,
+	"liveSassCompile.settings.formats": [
+		{
+			"extensionName": ".css",
+			"format": "expanded",
+			"savePath": null,
+			"savePathReplacementPairs": null
+		}
+	],
+	"remote.SSH.connectTimeout": 60,
+	"remote.SSH.enableDynamicForwarding": false,
+	"remote.SSH.enableRemoteCommand": true,
+	"remote.SSH.showLoginTerminal": true,
+	"remote.SSH.useExecServer": false,
+	"remote.SSH.useLocalServer": false,
+	"scss.validate": false,
+	"simpleBrowser.focusLockIndicator.enabled": true,
 	"terminal.integrated.cursorBlinking": true,
 	"terminal.integrated.cursorStyle": "line",
+	"terminal.integrated.fontFamily": "'JetBrains Mono', monospace",
+	"terminal.integrated.fontLigatures.enabled": true,
+	"terminal.integrated.gpuAcceleration": "off",
 	"window.autoDetectColorScheme": true,
 	"workbench.colorCustomizations": {
 		"activityBar.background": "#000000",
@@ -33,5 +59,15 @@
 		"titleBar.activeBackground": "#000000"
 	},
 	"workbench.iconTheme": "material-icon-theme",
-	"workbench.productIconTheme": "fluent-icons"
+	"workbench.productIconTheme": "fluent-icons",
+	"workbench.sideBar.location": "right",
+	"workbench.startupEditor": "welcomePage",
+	"yaml.disableSchemaDetection": [
+		"**/.github/workflows/*.yml",
+		"**/.github/workflows/*.yaml",
+		"**/.gitea/workflows/*.yml",
+		"**/.gitea/workflows/*.yaml",
+		"**/.forgejo/workflows/*.yml",
+		"**/.forgejo/workflows/*.yaml"
+	]
 }
