@@ -15,6 +15,7 @@
 		"kube.42header": true,
 		"mhutchie.git-graph": true,
 		"miguelsolorio.fluent-icons": true,
+		"ms-vscode-remote.remote-wsl": true,
 		"pkief.material-icon-theme": true
 	},
 	"files.autoSave": "afterDelay",
@@ -44,9 +45,35 @@
 	"simpleBrowser.focusLockIndicator.enabled": true,
 	"terminal.integrated.cursorBlinking": true,
 	"terminal.integrated.cursorStyle": "line",
+	"terminal.integrated.defaultProfile.windows": "Ubuntu-24.04 (WSL)",
 	"terminal.integrated.fontFamily": "'JetBrains Mono', monospace",
 	"terminal.integrated.fontLigatures.enabled": true,
 	"terminal.integrated.gpuAcceleration": "off",
+	"terminal.integrated.profiles.windows": {
+		"Command Prompt": {
+			"args": [],
+			"icon": "terminal-cmd",
+			"path": [
+				"${env:windir}\\Sysnative\\cmd.exe",
+				"${env:windir}\\System32\\cmd.exe"
+			]
+		},
+		"Git Bash": {
+			"icon": "terminal-git-bash",
+			"source": "Git Bash"
+		},
+		"PowerShell": {
+			"icon": "terminal-powershell",
+			"source": "PowerShell"
+		},
+		"Ubuntu-24.04 (WSL)": {
+			"args": [
+				"-d",
+				"Ubuntu-24.04"
+			],
+			"path": "C:\\WINDOWS\\System32\\wsl.exe"
+		}
+	},
 	"window.autoDetectColorScheme": true,
 	"workbench.colorCustomizations": {
 		"activityBar.background": "#000000",
