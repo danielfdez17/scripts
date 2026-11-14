@@ -75,6 +75,7 @@
 		}
 	},
 	"window.autoDetectColorScheme": true,
+	"window.density.layout": "compact",
 	"workbench.colorCustomizations": {
 		"activityBar.background": "#000000",
 		"editor.background": "#000000",
